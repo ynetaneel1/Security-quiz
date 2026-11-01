@@ -17,27 +17,27 @@
     #map { width: 100%; height: 100%; direction: ltr !important; z-index: 1; background: #090d16; }
     .leaflet-container { direction: ltr !important; }
 
-    /* סיכות טקטיות ללא תלות בקבצים חיצוניים */
+    /* סיכות טקטיות ממורכזות ללא שגיאות כיוון */
     .tactical-marker-wrap {
-      position: relative; width: 36px; height: 36px;
+      position: relative; width: 34px; height: 34px;
       display: flex; align-items: center; justify-content: center;
     }
     .tactical-pin {
-      width: 32px; height: 32px; border-radius: 999px;
+      width: 30px; height: 30px; border-radius: 999px;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 14px; color: #fff;
-      border: 2.5px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+      font-weight: 800; font-size: 13px; color: #fff;
+      border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.8);
       transition: transform 0.15s ease;
     }
     .tactical-pin::after {
-      content: ''; position: absolute; bottom: -5px; left: 50%;
+      content: ''; position: absolute; bottom: -4px; left: 50%;
       transform: translateX(-50%); border-left: 5px solid transparent;
-      border-right: 5px solid transparent; border-top: 6px solid #fff;
+      border-right: 5px solid transparent; border-top: 5px solid #fff;
     }
     .tactical-label {
-      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+      position: absolute; bottom: 38px; left: 50%; transform: translateX(-50%);
       background: rgba(15, 23, 42, 0.95); color: #f8fafc;
-      border: 1px solid rgba(255,255,255,0.25); padding: 2px 8px;
+      border: 1px solid rgba(255,255,255,0.25); padding: 2px 7px;
       border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap;
       direction: rtl; box-shadow: 0 2px 8px rgba(0,0,0,0.6); pointer-events: none;
     }
@@ -47,6 +47,13 @@
     .pin-active { background: #10b981; transform: scale(1.15); border-color: #fef08a; }
     .pin-truth { background: #16a34a; }
     .pin-error { background: #ef4444; }
+
+    /* ידיות קודקודים לעריכת פוליגון וציר */
+    .vertex-handle {
+      width: 14px; height: 14px; background: #fbbf24;
+      border: 2px solid #ffffff; border-radius: 50%;
+      box-shadow: 0 0 6px rgba(0,0,0,0.8); cursor: crosshair;
+    }
 
     @media print {
       body * { visibility: hidden; }
@@ -79,10 +86,10 @@
     </div>
   </header>
 
-  <!-- הנחיית מאבטח בבוחן -->
+  <!-- סרגל הנחיית מאבטח -->
   <div id="guard-hud" class="hidden bg-slate-900/95 border-b border-slate-800 px-3 py-2 z-20 flex flex-col gap-1 shrink-0">
     <div class="flex items-center justify-between text-xs text-slate-400">
-      <span>בחר יעד או גרור את הסיכה במפה למיקום המדויק:</span>
+      <span>בחר יעד או גרור את הסיכה במפה:</span>
       <span id="guard-target-type-hint" class="text-amber-400 font-bold"></span>
     </div>
     <div id="guard-pills" class="flex gap-1.5 overflow-x-auto pb-1"></div>
@@ -90,27 +97,27 @@
 
   <!-- התראת סיום זמן -->
   <div id="timeup-banner" class="hidden bg-red-600 text-white text-center py-2 px-3 text-xs font-extrabold z-30 shadow-md">
-    ⏱️ תם הזמן! הסיכות ננעלו. לחץ למטה על "הגש בוחן" לצפייה בסטיות ובציון.
+    ⏱️ תם הזמן! הסיכות ננעלו. לחץ למטה על "הגש בוחן".
   </div>
 
   <!-- מפה ראשית -->
   <main class="flex-1 relative w-full h-full overflow-hidden">
     <div id="map"></div>
 
-    <!-- סרגל צף למאבטח בזמן צפייה בתחקיר המפה (מאפשר לחזור לדו"ח ולשלוח שוב!) -->
+    <!-- סרגל צף למאבטח בזמן תחקיר -->
     <div id="debrief-floating-bar" class="hidden absolute bottom-4 left-4 right-4 z-40 max-w-md mx-auto">
       <button onclick="reopenResultsModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white font-black py-3.5 px-4 rounded-xl shadow-2xl flex items-center justify-center gap-2 border border-emerald-400/50">
         <span>📋 פתח דו"ח ושליחה בוואטסאפ</span>
       </button>
     </div>
 
-    <!-- הודעת מצב שרטוט לרבש"צ -->
-    <div id="drawing-hint-bar" class="hidden absolute top-3 left-4 right-4 z-20 bg-amber-500 text-slate-950 font-bold text-xs p-2.5 rounded-xl shadow-xl flex items-center justify-between">
-      <span id="drawing-hint-text">הקש על המפה להוספת קודקודים</span>
-      <button onclick="finishActiveDrawing()" class="bg-slate-950 text-white px-3 py-1 rounded-lg text-xs font-black">סיום שרטוט ✓</button>
+    <!-- הודעת מצב עריכת קודקודים לרבש"צ -->
+    <div id="editing-hint-bar" class="hidden absolute top-3 left-4 right-4 z-20 bg-amber-500 text-slate-950 font-bold text-xs p-2.5 rounded-xl shadow-xl flex items-center justify-between">
+      <span id="editing-hint-text">עריכת צורה: גרור נקודות צהובות או הקש להוספת קודקוד</span>
+      <button onclick="finishEditingTarget()" class="bg-slate-950 text-white px-3 py-1 rounded-lg text-xs font-black">סיום עריכה ✓</button>
     </div>
 
-    <!-- פאנל ניהול צד ימין לרבש"צ -->
+    <!-- פאנל ניהול צד ימין לרבש"צ (מתקפל) -->
     <aside id="admin-sidebar" class="absolute top-2 right-2 bottom-20 w-[330px] max-w-[94vw] z-20 flex flex-col gap-2 pointer-events-none transition-transform duration-300 translate-x-0">
       
       <!-- הגדרות בוחן -->
@@ -142,19 +149,28 @@
         </div>
       </div>
 
-      <!-- ניהול יעדים (נקודה / קו / מתחם) -->
-      <div class="bg-slate-900/95 border border-slate-700 rounded-xl shadow-2xl overflow-hidden pointer-events-auto backdrop-blur-md flex flex-col max-h-[58vh]">
-        <div class="px-3.5 py-2.5 bg-slate-800/80 flex items-center justify-between text-xs font-bold text-slate-200 shrink-0">
-          <span>📍 2. יעדים בבוחן (<span id="points-count">5</span>/10)</span>
-          <span class="text-[11px] text-blue-400">נקודות / צירים / מתחמים</span>
+      <!-- ניהול יעדים (קומפקטי - שורה אחת בלבד ליעד) -->
+      <div class="bg-slate-900/95 border border-slate-700 rounded-xl shadow-2xl overflow-hidden pointer-events-auto backdrop-blur-md flex flex-col max-h-[62vh]">
+        <div class="px-3 py-2 bg-slate-800/80 flex items-center justify-between text-xs font-bold text-slate-200 shrink-0 border-b border-slate-800">
+          <span>📍 יעדים בבוחן (<span id="points-count">3</span>/10)</span>
+          <span class="text-[10px] text-blue-400 font-normal">הקש במפה להוספה</span>
         </div>
-        <div class="p-2.5 overflow-y-auto space-y-2 flex-1 border-t border-slate-800" id="points-list-container"></div>
+        
+        <!-- כפתור הוספת יעד מפורש -->
+        <div class="p-2 pb-1 border-b border-slate-800/80">
+          <button onclick="addNewTarget()" class="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow">
+            <span>➕ הוסף יעד חדש</span>
+          </button>
+        </div>
+
+        <!-- רשימת יעדים בשורה אחת בלבד -->
+        <div class="p-2 overflow-y-auto space-y-1.5 flex-1" id="points-list-container"></div>
       </div>
 
     </aside>
   </main>
 
-  <!-- סרגל פעולה תחתון קבוע -->
+  <!-- סרגל פעולה תחתון -->
   <footer id="bottom-bar" class="bg-slate-900/95 border-t border-slate-800 p-3 z-30 shrink-0">
     <div id="admin-footer-btns" class="max-w-md mx-auto">
       <button onclick="openShareModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg text-sm flex items-center justify-center gap-2">
@@ -168,7 +184,7 @@
     </div>
   </footer>
 
-  <!-- מודאל פתיחת בוחן למאבטח -->
+  <!-- מודאל כניסת מאבטח -->
   <div id="modal-guard-start" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-sm shadow-2xl space-y-3.5 text-center">
       <div class="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center mx-auto text-2xl">🎯</div>
@@ -188,7 +204,7 @@
     </div>
   </div>
 
-  <!-- מודאל שיתוף קישור לרבש"צ -->
+  <!-- מודאל שיתוף רבש"צ -->
   <div id="modal-share" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-sm shadow-2xl space-y-3 text-center">
       <h3 class="font-extrabold text-base text-white text-right">שיתוף בוחן למאבטחים</h3>
@@ -216,10 +232,8 @@
         </div>
       </div>
 
-      <!-- פירוט יעדים -->
       <div id="results-list" class="overflow-y-auto space-y-1.5 text-right text-xs pr-1 flex-1"></div>
 
-      <!-- כפתורי פעולה לשיתוף ולהורדה -->
       <div class="space-y-2 shrink-0 pt-1">
         <button id="btn-share-whatsapp-rich" onclick="shareResultsToWhatsAppRich()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-sm shadow-lg flex items-center justify-center gap-2">
           <span>📲 שלח דו"ח מלא + תמונה לוואטסאפ</span>
@@ -229,7 +243,7 @@
             <span>🖼️ הורד תמונת תחקיר</span>
           </button>
           <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1">
-            <span>📄 הדפס / שמור כ-PDF</span>
+            <span>📄 שמור כ-PDF</span>
           </button>
         </div>
         <button onclick="closeResultsModalToMap()" class="w-full bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 font-bold py-2.5 rounded-xl text-xs border border-blue-500/40">
@@ -239,10 +253,8 @@
     </div>
   </div>
 
-  <!-- קנבס נסתר לייצור תמונת תחקיר ויזואלית -->
   <canvas id="debrief-canvas" width="800" height="960" class="hidden"></canvas>
 
-  <!-- אזור נסתר להדפסת PDF נקייה -->
   <div id="printable-report" class="hidden p-8 space-y-4 font-sans text-black">
     <h1 class="text-2xl font-bold text-center border-b pb-2">דו"ח בוחן התמצאות גזרה - ביטחון מגדל עוז</h1>
     <div id="print-meta" class="flex justify-between text-sm py-2"></div>
@@ -276,7 +288,7 @@
   let activeQuizMeta = null;
   let lastDebriefResult = null;
 
-  // יעדים מובנים לדוגמה (כולל נקודה, ציר ומתחם!)
+  // רשימת יעדים התחלתית
   let points = [
     { id: 1, type: 'point', name: "שער ראשי - כניסה", lat: 31.64272, lng: 35.14198 },
     { 
@@ -292,29 +304,26 @@
         [31.64065, 35.14325]
       ]
     },
-    { id: 3, type: 'point', name: "שער מזרחי / מטעים", lat: 31.64015, lng: 35.14675 },
-    { 
-      id: 4, 
-      type: 'line', 
-      name: "ציר ביטחון דרומי", 
-      lat: 31.63835, 
-      lng: 35.14390,
-      coords: [
-        [31.63820, 35.14150],
-        [31.63835, 35.14390],
-        [31.63890, 35.14620]
-      ]
-    },
-    { id: 5, type: 'point', name: "פילבוקס צפוני", lat: 31.64295, lng: 35.14450 }
+    { id: 3, type: 'point', name: "שער מזרחי / מטעים", lat: 31.64015, lng: 35.14675 }
   ];
 
-  let adminLayers = [];
+  let adminMapLayers = [];
+  let editingVertexMarkers = [];
+  let currentlyEditingId = null;
+
   let guardMarkers = [];
   let guardAnswers = [];
   let debriefLayers = [];
-  let currentlyDrawingTargetId = null;
 
-  // === אלגוריתמי גיאומטריה ומרחקים במטרים (היטל מקומי מדויק) ===
+  // חישוב מרכז גיאומטרי של צורה
+  function computeCentroid(coords) {
+    if (!coords || coords.length === 0) return { lat: CENTER_LAT, lng: CENTER_LNG };
+    let sumLat = 0, sumLng = 0;
+    coords.forEach(c => { sumLat += c[0]; sumLng += c[1]; });
+    return { lat: sumLat / coords.length, lng: sumLng / coords.length };
+  }
+
+  // אלגוריתמי מרחק במטרים
   function latLngToMeters(lat, lng) {
     const x = (lng - CENTER_LNG) * 111320 * Math.cos(CENTER_LAT * Math.PI / 180);
     const y = (lat - CENTER_LAT) * 110540;
@@ -373,13 +382,12 @@
       return { dist: Math.round(minDist), nearest: metersToLatLng(nearestM), inside: false };
     }
 
-    // נקודה רגילה
     const tM = latLngToMeters(target.lat, target.lng);
     const dist = Math.round(Math.hypot(p.x - tM.x, p.y - tM.y));
     return { dist, nearest: { lat: target.lat, lng: target.lng }, inside: false };
   }
 
-  // === יצירת סמלי סיכות ייחודיים ללא שגיאות כיווניות ===
+  // יצירת אייקון טקטי
   function makeMarkerIcon(num, name, styleClass, showBadge = true) {
     return L.divIcon({
       className: '',
@@ -389,12 +397,12 @@
           <div class="tactical-pin ${styleClass}">${num}</div>
         </div>
       `,
-      iconSize: [36, 36],
-      iconAnchor: [18, 18]
+      iconSize: [34, 34],
+      iconAnchor: [17, 17]
     });
   }
 
-  // === אתחול האפליקציה ===
+  // אתחול אפליקציה ומפה
   function initApp() {
     map = L.map('map', { zoomControl: false, attributionControl: false }).setView([CENTER_LAT, CENTER_LNG], 16);
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
@@ -408,96 +416,196 @@
     }
   }
 
-  // === מצב רבש"צ (ניהול) ===
+  // ========= מצב רבש"צ (ניהול) =========
   function enterAdminMode() {
     isGuardMode = false;
-    renderAdminGeometry();
-    renderAdminList();
+    renderAdminAll();
 
+    // לחיצה על המפה מוסיפה יעד חדש (או מוסיפה קודקוד אם עורכים צורה כרגע)
     map.on('click', (e) => {
-      if (currentlyDrawingTargetId) {
-        const tgt = points.find(p => p.id === currentlyDrawingTargetId);
-        if (tgt) {
+      if (currentlyEditingId) {
+        const tgt = points.find(p => p.id === currentlyEditingId);
+        if (tgt && tgt.type !== 'point') {
           if (!tgt.coords) tgt.coords = [];
           tgt.coords.push([e.latlng.lat, e.latlng.lng]);
-          tgt.lat = e.latlng.lat;
-          tgt.lng = e.latlng.lng;
-          renderAdminGeometry();
-          renderAdminList();
-          document.getElementById('drawing-hint-text').textContent = `קודקודים שנוספו ל-${tgt.name}: ${tgt.coords.length}`;
+          const c = computeCentroid(tgt.coords);
+          tgt.lat = c.lat;
+          tgt.lng = c.lng;
+          renderAdminAll();
+          document.getElementById('editing-hint-text').textContent = `קודקוד נוסף! סה"כ קודקודים: ${tgt.coords.length}`;
         }
         return;
       }
 
+      // הוספת יעד רגיל בלחיצה על המפה
       if (points.length >= 10) { alert('ניתן להגדיר עד 10 יעדים בבוחן.'); return; }
       points.push({
         id: Date.now(),
         type: 'point',
-        name: `יעד חדש ${points.length + 1}`,
+        name: `יעד ${points.length + 1}`,
         lat: e.latlng.lat,
         lng: e.latlng.lng
       });
-      renderAdminGeometry();
-      renderAdminList();
+      renderAdminAll();
     });
+  }
+
+  // כפתור מפורש להוספת יעד
+  window.addNewTarget = () => {
+    if (points.length >= 10) { alert('ניתן להגדיר עד 10 יעדים.'); return; }
+    const center = map.getCenter();
+    points.push({
+      id: Date.now(),
+      type: 'point',
+      name: `יעד ${points.length + 1}`,
+      lat: center.lat,
+      lng: center.lng
+    });
+    renderAdminAll();
+  };
+
+  function renderAdminAll() {
+    renderAdminGeometry();
+    renderAdminList();
   }
 
   function renderAdminGeometry() {
-    adminLayers.forEach(l => map.removeLayer(l));
-    adminLayers = [];
+    adminMapLayers.forEach(l => map.removeLayer(l));
+    adminMapLayers = [];
+    editingVertexMarkers.forEach(m => map.removeLayer(m));
+    editingVertexMarkers = [];
 
     points.forEach((pt, idx) => {
+      let shapeLayer = null;
+
+      // 1. שרטוט הצורה (קו או פוליגון)
       if (pt.type === 'poly' && pt.coords && pt.coords.length >= 3) {
-        const poly = L.polygon(pt.coords, { color: '#38bdf8', weight: 3, fillColor: '#38bdf8', fillOpacity: 0.25 }).addTo(map);
-        adminLayers.push(poly);
+        shapeLayer = L.polygon(pt.coords, { color: '#38bdf8', weight: 3, fillColor: '#38bdf8', fillOpacity: 0.25 }).addTo(map);
+        adminMapLayers.push(shapeLayer);
       } else if (pt.type === 'line' && pt.coords && pt.coords.length >= 2) {
-        const line = L.polyline(pt.coords, { color: '#fbbf24', weight: 4 }).addTo(map);
-        adminLayers.push(line);
+        shapeLayer = L.polyline(pt.coords, { color: '#fbbf24', weight: 4 }).addTo(map);
+        adminMapLayers.push(shapeLayer);
       }
 
+      // אם הצורה קיימת אך המרכז לא מחושב - נחשב אוטומטית
+      if (pt.coords && pt.coords.length > 0 && pt.type !== 'point') {
+        const c = computeCentroid(pt.coords);
+        pt.lat = c.lat;
+        pt.lng = c.lng;
+      }
+
+      // 2. סיכת המספר - צמודה לצורה, וכאשר גוררים אותה - כל הצורה זזה ביחד!
       const marker = L.marker([pt.lat, pt.lng], {
         draggable: true,
-        icon: makeMarkerIcon(idx + 1, `${pt.name} (${pt.type === 'poly' ? 'מתחם' : pt.type === 'line' ? 'ציר' : 'נקודה'})`, 'pin-admin')
+        icon: makeMarkerIcon(idx + 1, pt.name, 'pin-admin')
       }).addTo(map);
 
-      marker.on('dragend', (ev) => {
-        const pos = ev.target.getLatLng();
-        pt.lat = pos.lat;
-        pt.lng = pos.lng;
+      // גרירה מסונכרנת בזמן אמת של הצורה יחד עם הסיכה
+      let dragStartLatLng = null;
+      marker.on('dragstart', (ev) => {
+        dragStartLatLng = ev.target.getLatLng();
       });
-      adminLayers.push(marker);
+
+      marker.on('drag', (ev) => {
+        if (!dragStartLatLng) return;
+        const currentPos = ev.target.getLatLng();
+        const deltaLat = currentPos.lat - dragStartLatLng.lat;
+        const deltaLng = currentPos.lng - dragStartLatLng.lng;
+
+        if (pt.coords && shapeLayer) {
+          const shiftedCoords = pt.coords.map(c => [c[0] + deltaLat, c[1] + deltaLng]);
+          shapeLayer.setLatLngs(shiftedCoords);
+        }
+      });
+
+      marker.on('dragend', (ev) => {
+        const currentPos = ev.target.getLatLng();
+        if (dragStartLatLng && pt.coords) {
+          const deltaLat = currentPos.lat - dragStartLatLng.lat;
+          const deltaLng = currentPos.lng - dragStartLatLng.lng;
+          pt.coords = pt.coords.map(c => [c[0] + deltaLat, c[1] + deltaLng]);
+        }
+        pt.lat = currentPos.lat;
+        pt.lng = currentPos.lng;
+        dragStartLatLng = null;
+        renderAdminAll();
+      });
+
+      adminMapLayers.push(marker);
+
+      // 3. הצגת ידיות קודקודים לעריכה אם היעד נמצא במצב עריכה
+      if (currentlyEditingId === pt.id && pt.coords && pt.type !== 'point') {
+        pt.coords.forEach((coord, vIdx) => {
+          const vMarker = L.marker(coord, {
+            draggable: true,
+            icon: L.divIcon({
+              className: '',
+              html: `<div class="vertex-handle" title="גרור לעריכה / לחץ פעמיים למחיקה"></div>`,
+              iconSize: [14, 14],
+              iconAnchor: [7, 7]
+            })
+          }).addTo(map);
+
+          vMarker.on('drag', (ev) => {
+            const pos = ev.target.getLatLng();
+            pt.coords[vIdx] = [pos.lat, pos.lng];
+            if (shapeLayer) shapeLayer.setLatLngs(pt.coords);
+            const c = computeCentroid(pt.coords);
+            pt.lat = c.lat;
+            pt.lng = c.lng;
+            marker.setLatLng([c.lat, c.lng]);
+          });
+
+          vMarker.on('dragend', () => renderAdminAll());
+
+          // מחיקת קודקוד בלחיצה כפולה
+          vMarker.on('dblclick', () => {
+            if (pt.coords.length <= (pt.type === 'poly' ? 3 : 2)) {
+              alert('לא ניתן למחוק קודקוד נוסף, זו הכמות המינימלית לצורה זו.');
+              return;
+            }
+            pt.coords.splice(vIdx, 1);
+            const c = computeCentroid(pt.coords);
+            pt.lat = c.lat;
+            pt.lng = c.lng;
+            renderAdminAll();
+          });
+
+          editingVertexMarkers.push(vMarker);
+        });
+      }
     });
   }
 
+  // רינדור רשימת היעדים בשורה אחת בלבד
   function renderAdminList() {
     document.getElementById('points-count').textContent = points.length;
     const container = document.getElementById('points-list-container');
     container.innerHTML = '';
 
     points.forEach((pt, idx) => {
-      const isDrawingThis = currentlyDrawingTargetId === pt.id;
-      const card = document.createElement('div');
-      card.className = `p-2 rounded-xl border text-xs space-y-1.5 ${isDrawingThis ? 'bg-amber-950/60 border-amber-500' : 'bg-slate-950/90 border-slate-800'}`;
-      card.innerHTML = `
-        <div class="flex items-center gap-1.5">
-          <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[11px]">${idx + 1}</span>
-          <input type="text" value="${pt.name.replace(/"/g, '&quot;')}" oninput="updateTargetName(${pt.id}, this.value)" class="bg-transparent text-white w-full outline-none border-b border-transparent focus:border-blue-500 px-1 font-semibold">
-          <button onclick="removeTarget(${pt.id})" class="text-red-400 hover:text-red-300 px-1" title="מחק">🗑️</button>
-        </div>
-        <div class="flex items-center justify-between pt-1">
-          <select onchange="changeTargetType(${pt.id}, this.value)" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 text-[11px] outline-none">
-            <option value="point" ${pt.type==='point'?'selected':''}>📍 נקודה</option>
-            <option value="line" ${pt.type==='line'?'selected':''}>〰️ ציר (קו)</option>
-            <option value="poly" ${pt.type==='poly'?'selected':''}>⬡ מתחם (שטח)</option>
-          </select>
-          ${pt.type !== 'point' ? `
-            <button onclick="startDrawingTarget(${pt.id})" class="text-[11px] px-2 py-1 rounded font-bold ${isDrawingThis ? 'bg-amber-500 text-black' : 'bg-slate-800 text-amber-300 border border-slate-700'}">
-              ${isDrawingThis ? 'סיום שרטוט ✓' : '✏️ שרטט במפה'}
-            </button>
-          ` : ''}
-        </div>
+      const isEditing = currentlyEditingId === pt.id;
+      const row = document.createElement('div');
+      row.className = `flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-xs h-[38px] ${
+        isEditing ? 'bg-amber-950/70 border-amber-500' : 'bg-slate-950/90 border-slate-800'
+      }`;
+
+      row.innerHTML = `
+        <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[11px]">${idx + 1}</span>
+        <input type="text" value="${pt.name.replace(/"/g, '&quot;')}" oninput="updateTargetName(${pt.id}, this.value)" class="bg-transparent text-white w-full outline-none text-xs font-semibold px-1 truncate border-b border-transparent focus:border-blue-500">
+        <select onchange="changeTargetType(${pt.id}, this.value)" class="bg-slate-900 border border-slate-700 rounded px-1 py-1 text-slate-200 text-[11px] outline-none shrink-0" title="סוג יעד">
+          <option value="point" ${pt.type==='point'?'selected':''}>📍 נקודה</option>
+          <option value="line" ${pt.type==='line'?'selected':''}>〰️ ציר</option>
+          <option value="poly" ${pt.type==='poly'?'selected':''}>⬡ מתחם</option>
+        </select>
+        ${pt.type !== 'point' ? `
+          <button onclick="toggleEditTarget(${pt.id})" class="text-[11px] px-2 py-1 rounded font-bold shrink-0 ${isEditing ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-amber-300 border border-slate-700'}" title="ערוך קודקודים">
+            ${isEditing ? 'סיום ✓' : '✏️ ערוך'}
+          </button>
+        ` : ''}
+        <button onclick="removeTarget(${pt.id})" class="text-red-400 hover:text-red-300 px-1 text-xs shrink-0" title="מחק">🗑️</button>
       `;
-      container.appendChild(card);
+      container.appendChild(row);
     });
   }
 
@@ -511,38 +619,56 @@
     if (pt) {
       pt.type = newType;
       if (newType !== 'point' && (!pt.coords || pt.coords.length === 0)) {
-        pt.coords = [[pt.lat, pt.lng]];
+        // יצירת צורת בסיס סביב הנקודה
+        const d = 0.0006;
+        if (newType === 'poly') {
+          pt.coords = [
+            [pt.lat + d, pt.lng - d],
+            [pt.lat + d, pt.lng + d],
+            [pt.lat - d, pt.lng + d],
+            [pt.lat - d, pt.lng - d]
+          ];
+        } else {
+          pt.coords = [
+            [pt.lat, pt.lng - d],
+            [pt.lat, pt.lng + d]
+          ];
+        }
       }
-      renderAdminGeometry();
-      renderAdminList();
+      currentlyEditingId = (newType !== 'point') ? id : null;
+      renderAdminAll();
+      if (currentlyEditingId) {
+        document.getElementById('editing-hint-bar').classList.remove('hidden');
+      } else {
+        document.getElementById('editing-hint-bar').classList.add('hidden');
+      }
     }
   };
 
-  window.startDrawingTarget = (id) => {
-    if (currentlyDrawingTargetId === id) {
-      finishActiveDrawing();
-      return;
+  window.toggleEditTarget = (id) => {
+    if (currentlyEditingId === id) {
+      finishEditingTarget();
+    } else {
+      currentlyEditingId = id;
+      const tgt = points.find(p => p.id === id);
+      document.getElementById('editing-hint-bar').classList.remove('hidden');
+      document.getElementById('editing-hint-text').textContent = `עריכת קודקודים: ${tgt.name} (גרור נקודות צהובות או הקש במפה)`;
+      map.panTo([tgt.lat, tgt.lng]);
+      renderAdminAll();
     }
-    currentlyDrawingTargetId = id;
-    const tgt = points.find(p => p.id === id);
-    if (tgt) tgt.coords = []; // אתחול קודקודים לשרטוט חדש
-    document.getElementById('drawing-hint-bar').classList.remove('hidden');
-    document.getElementById('drawing-hint-text').textContent = `לחץ על המפה להוספת קודקודים עבור: ${tgt.name}`;
-    renderAdminList();
   };
 
-  window.finishActiveDrawing = () => {
-    currentlyDrawingTargetId = null;
-    document.getElementById('drawing-hint-bar').classList.add('hidden');
-    renderAdminGeometry();
-    renderAdminList();
+  window.finishEditingTarget = () => {
+    currentlyEditingId = null;
+    document.getElementById('editing-hint-bar').classList.add('hidden');
+    renderAdminAll();
   };
 
   window.removeTarget = (id) => {
     if (points.length <= 3) { alert('חובה להשאיר לפחות 3 יעדים בבוחן.'); return; }
     points = points.filter(p => p.id !== id);
-    renderAdminGeometry();
-    renderAdminList();
+    if (currentlyEditingId === id) currentlyEditingId = null;
+    renderAdminAll();
   };
 
   window.toggleLabels = () => {
@@ -580,7 +706,6 @@
     return JSON.parse(new TextDecoder().decode(bytes));
   }
 
-  // שיתוף וקיצור קישור
   function shortenUrl(longUrl) {
     return new Promise(resolve => {
       const cb = 'isgd_cb_' + Math.floor(Math.random() * 100000);
@@ -602,7 +727,6 @@
     const phone = document.getElementById('cfg-phone').value.trim();
     const duration = parseInt(document.getElementById('cfg-time').value);
 
-    // כיווץ אופטימלי לנתונים
     const serializedTargets = points.map(p => ({
       t: p.type === 'poly' ? 2 : p.type === 'line' ? 1 : 0,
       n: p.name,
@@ -642,7 +766,7 @@
     alert('הקישור הועתק ללוח!');
   };
 
-  // === מצב מאבטח (נבחן) ===
+  // ========= מצב מאבטח (נבחן) =========
   function enterGuardMode(qParam) {
     try {
       const data = safeDecode(decodeURIComponent(qParam));
@@ -689,7 +813,7 @@
 
   window.beginGuardTest = () => {
     const name = document.getElementById('input-guard-name').value.trim();
-    if (!name) { alert('יש להזין שם מלא כדי להתחיל.'); return; }
+    if (!name) { alert('יש להזין שם מלא.'); return; }
     currentGuardName = name;
 
     document.getElementById('modal-guard-start').classList.add('hidden');
@@ -725,7 +849,6 @@
       renderGuardPills();
     });
 
-    // שעון עצר
     remainingSeconds = activeQuizMeta.duration || 120;
     updateTimerText();
     timerInterval = setInterval(() => {
@@ -748,8 +871,8 @@
     const container = document.getElementById('guard-pills');
     container.innerHTML = '';
     const current = guardAnswers[activeGuardPointIdx];
-    const typeLabel = current.type === 'poly' ? 'מתחם (פוליגון)' : current.type === 'line' ? 'ציר (קו)' : 'נקודה';
-    document.getElementById('guard-target-type-hint').textContent = `[${typeLabel}]`;
+    const typeLabel = current.type === 'poly' ? 'מתחם' : current.type === 'line' ? 'ציר' : 'נקודה';
+    document.getElementById('guard-target-type-hint').textContent = `[יעד: ${typeLabel}]`;
 
     guardAnswers.forEach((ans, idx) => {
       const isSel = idx === activeGuardPointIdx;
@@ -810,7 +933,7 @@
     guardMarkers.forEach(m => m.dragging && m.dragging.disable());
   }
 
-  // === הגשת בוחן וחישוב תוצאות ===
+  // הגשת בוחן וחישוב תוצאות
   window.submitGuardExam = () => {
     if (timerInterval) clearInterval(timerInterval);
     isExamLocked = true;
@@ -862,12 +985,10 @@
     document.getElementById('bottom-bar').classList.add('hidden');
     document.getElementById('timeup-banner').classList.add('hidden');
 
-    // שרטוט מפת התחקיר (סימון האמת, קווי הסטייה וסיכות המאבטח)
     debriefLayers.forEach(l => map.removeLayer(l));
     debriefLayers = [];
 
     resultData.details.forEach(item => {
-      // ציור מתחם / ציר אמת
       if (item.type === 'poly' && item.coords && item.coords.length >= 3) {
         debriefLayers.push(L.polygon(item.coords, { color: '#10b981', weight: 3, fillColor: '#10b981', fillOpacity: 0.25 }).addTo(map));
       } else if (item.type === 'line' && item.coords && item.coords.length >= 2) {
@@ -876,11 +997,9 @@
         debriefLayers.push(L.marker([item.truthLat, item.truthLng], { icon: makeMarkerIcon(item.num, `${item.name} (אמת)`, 'pin-truth', true) }).addTo(map));
       }
 
-      // סיכת המאבטח
       const guardPinClass = item.score > 70 ? 'pin-guard' : 'pin-error';
       debriefLayers.push(L.marker([item.ansLat, item.ansLng], { icon: makeMarkerIcon(item.num, `סימון (${item.dist}מ')`, guardPinClass, true) }).addTo(map));
 
-      // קו מקווקו לנקודת האמת / הקצה הקרוב
       if (item.dist > 0) {
         debriefLayers.push(L.polyline([[item.nearestLat, item.nearestLng], [item.ansLat, item.ansLng]], {
           color: item.score > 70 ? '#4ade80' : item.score > 0 ? '#facc15' : '#ef4444',
@@ -899,7 +1018,7 @@
   function populateResultsModal(res) {
     document.getElementById('res-guard-name-title').textContent = res.guardName;
     document.getElementById('final-score-circle').textContent = res.finalScore;
-    document.getElementById('res-summary-stats').textContent = `${res.details.length} יעדים נבחנו • ${res.timestamp}`;
+    document.getElementById('res-summary-stats').textContent = `${res.details.length} יעדים • ${res.timestamp}`;
 
     const listEl = document.getElementById('results-list');
     listEl.innerHTML = '';
@@ -922,7 +1041,6 @@
       listEl.appendChild(row);
     });
 
-    // הכנה להדפסה
     document.getElementById('print-meta').innerHTML = `
       <div><b>מאבטח:</b> ${res.guardName}</div>
       <div><b>תאריך:</b> ${res.timestamp}</div>
@@ -943,7 +1061,6 @@
     });
   }
 
-  // חזרה למפה ופתיחה חוזרת של הדו"ח
   window.closeResultsModalToMap = () => {
     document.getElementById('modal-results').classList.add('hidden');
     document.getElementById('modal-results').classList.remove('flex');
@@ -955,7 +1072,6 @@
     document.getElementById('modal-results').classList.add('flex');
   };
 
-  // יצירת תמונת תחקיר מבצעית בקנבס
   function renderDebriefToCanvas() {
     const canvas = document.getElementById('debrief-canvas');
     const ctx = canvas.getContext('2d');
@@ -964,7 +1080,6 @@
     ctx.fillStyle = '#090d16';
     ctx.fillRect(0, 0, 800, 960);
 
-    // מסגרת עליונה
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(20, 20, 760, 110);
     ctx.strokeStyle = '#334155';
@@ -977,9 +1092,8 @@
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '15px Rubik, sans-serif';
-    ctx.fillText(`ביטחון מגדל עוז • שם מאבטח: ${res.guardName}`, 750, 95);
+    ctx.fillText(`ביטחון מגדל עוז • מאבטח: ${res.guardName}`, 750, 95);
 
-    // עיגול ציון
     ctx.fillStyle = '#10b981';
     ctx.font = 'bold 44px monospace';
     ctx.textAlign = 'left';
@@ -988,7 +1102,6 @@
     ctx.fillStyle = '#94a3b8';
     ctx.fillText('ציון סופי', 50, 102);
 
-    // טבלת יעדים
     let y = 170;
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 16px Rubik, sans-serif';
@@ -1020,7 +1133,6 @@
       y += 62;
     });
 
-    // כותרת תחתונה
     ctx.fillStyle = '#64748b';
     ctx.font = '12px Rubik, sans-serif';
     ctx.textAlign = 'center';
@@ -1029,7 +1141,6 @@
     return canvas;
   }
 
-  // שיתוף עשיר לוואטסאפ (תמונה + טקסט)
   window.shareResultsToWhatsAppRich = async () => {
     const res = lastDebriefResult;
     const canvas = renderDebriefToCanvas();
@@ -1047,7 +1158,6 @@
                        `*פירוט סטיות לפי יעדים:*\n` +
                        waLines.join('\n') + `\n\n_מצורפת תמונת תחקיר מבצעית._`;
 
-    // בדיקה האם המכשיר תומך בשיתוף קובץ תמונה ישירות
     if (navigator.canShare) {
       canvas.toBlob(async (blob) => {
         const file = new File([blob], `תחקיר_${res.guardName}.png`, { type: 'image/png' });
