@@ -1,1180 +1,504 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>בוחן התמצאות גזרה - מגדל עוז</title>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Google Fonts: Heebo -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-
-  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    html, body { width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: #0f172a; color: #f8fafc; }
+    #app { display: flex; flex-direction: column; width: 100%; height: 100%; height: 100dvh; position: relative; }
+    
+    /* מפה */
+    #map-container { flex: 1; width: 100%; position: relative; }
+    #map { width: 100%; height: 100%; }
+
+    /* סרגל עליון */
+    .top-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1); z-index: 1000;
+    }
+    .badge { padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+    .badge-admin { background: #3b82f6; color: white; }
+    .badge-test { background: #10b981; color: white; }
+    .timer-badge { background: #ef4444; color: white; font-family: monospace; font-size: 16px; padding: 4px 12px; }
+
+    /* סרגל תחתון קבוע */
+    .action-panel {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 1000;
+      background: rgba(15, 23, 42, 0.95); padding: 12px 16px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn {
+      display: inline-flex; justify-content: center; align-items: center; width: 100%;
+      padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; text-decoration: none; text-align: center;
+    }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-success { background: #16a34a; color: white; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-secondary { background: #334155; color: #cbd5e1; }
+    .btn:active { transform: scale(0.98); opacity: 0.9; }
+
+    /* פאנל ניהול נגלל */
+    .drawer {
+      position: absolute; top: 50px; bottom: 0; right: 0; width: 100%; max-width: 380px;
+      background: #1e293b; z-index: 1001; transform: translateX(100%); transition: transform 0.3s ease;
+      display: flex; flex-direction: column; box-shadow: -4px 0 20px rgba(0,0,0,0.4);
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer-header { padding: 14px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    .drawer-content { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+    
+    .point-card {
+      background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155;
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    }
+    .point-card input {
+      background: transparent; border: none; border-bottom: 1px dashed #64748b;
+      color: white; font-size: 14px; width: 100%; padding: 4px; outline: none;
     }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100dvh;
-      overflow: hidden;
-      font-family: 'Heebo', sans-serif;
-      background-color: #0b1120;
-      color: #f8fafc;
+    /* התראת זמן תם */
+    .time-up-banner {
+      background: #ef4444; color: white; text-align: center; padding: 8px;
+      font-weight: 700; font-size: 14px; display: none;
     }
 
-    #map {
-      width: 100%;
-      height: 100%;
-      background-color: #0f172a;
-      z-index: 1;
+    /* מודאלים */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-box {
+      background: #1e293b; border-radius: 12px; padding: 20px; width: 100%; max-width: 420px;
+      max-height: 90vh; overflow-y: auto; border: 1px solid #334155; display: flex; flex-direction: column; gap: 14px;
     }
 
-    /* Tactical Map Pins */
-    .tactical-pin-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transform: translate(-50%, -100%);
-      pointer-events: auto;
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 13px; color: #94a3b8; font-weight: 600; }
+    .form-group input, .form-group select {
+      background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+      padding: 10px; color: white; font-size: 14px; outline: none;
     }
 
-    .pin-label {
-      background: rgba(15, 23, 42, 0.94);
-      color: #fff;
-      border: 1.5px solid #38bdf8;
-      padding: 3px 10px;
-      border-radius: 9999px;
-      font-size: 12px;
-      font-weight: 800;
-      white-space: nowrap;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.65);
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .pin-label.active-pin-label {
-      background: #f59e0b;
-      color: #0f172a;
-      border-color: #ffffff;
-      font-size: 13px;
-    }
-
-    .pin-head {
-      width: 34px;
-      height: 34px;
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 6px 14px rgba(0,0,0,0.65);
-      border: 2.5px solid #ffffff;
-    }
-
-    .pin-head span {
-      transform: rotate(45deg);
-      font-weight: 900;
-      font-size: 14px;
-      color: #ffffff;
-    }
-
-    .pin-shadow {
-      width: 14px;
-      height: 5px;
-      background: rgba(0, 0, 0, 0.55);
-      border-radius: 50%;
-      margin-top: 2px;
-    }
-
-    .pulse-ring {
-      position: absolute;
-      bottom: 4px;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: 3px solid #f59e0b;
-      animation: pulseRing 1.4s infinite ease-out;
-      pointer-events: none;
-    }
-
-    @keyframes pulseRing {
-      0% { transform: scale(0.5); opacity: 1; }
-      100% { transform: scale(1.85); opacity: 0; }
-    }
-
-    .leaflet-control-attribution {
-      font-size: 9px !important;
-      background: rgba(15, 23, 42, 0.6) !important;
-      color: #94a3b8 !important;
+    .target-bubble {
+      position: absolute; top: 60px; left: 16px; right: 16px; z-index: 1000;
+      background: rgba(15, 23, 42, 0.95); border: 2px solid #3b82f6; border-radius: 10px;
+      padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center;
     }
   </style>
 </head>
-<body class="flex flex-col h-[100dvh] w-full overflow-hidden bg-slate-950 text-slate-100">
-
-  <!-- =========================================================
-       TOP HEADER BAR (ADMIN BAR OR GUARD EXAM HUD)
-  ========================================================== -->
-  <!-- ADMIN HEADER (Hidden automatically when a Guard opens a shared link) -->
-  <header id="adminHeader" class="bg-slate-900 border-b border-slate-800 px-3 sm:px-5 py-2.5 flex items-center justify-between shrink-0 z-30">
-    <div class="flex items-center gap-2.5">
-      <button onclick="toggleAdminDrawer()" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs sm:text-sm flex items-center gap-1.5 transition">
-        <i class="fa-solid fa-sliders"></i>
-        <span id="btnDrawerText">הסתר תפריט</span>
-      </button>
-      <h1 class="font-extrabold text-sm sm:text-base text-white truncate">
-        בוחן התמצאות - ניהול רבש"צ
-      </h1>
-    </div>
-
-    <button onclick="startGuardMode(false)" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow transition">
-      <i class="fa-solid fa-eye"></i>
-      <span>תצוגה מקדימה כנבחן</span>
-    </button>
-  </header>
-
-  <!-- GUARD EXAM TOP HUD (Visible ONLY during active Guard Exam) -->
-  <header id="guardHeaderHud" class="hidden bg-slate-900 border-b border-slate-800 px-3 py-2 shrink-0 z-30">
-    <div class="max-w-3xl mx-auto flex flex-col gap-1.5">
-      <div class="flex items-center justify-between gap-2">
-        <!-- Current Point Prompt -->
-        <div class="flex items-center gap-2 min-w-0">
-          <span id="hudPointBadge" class="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-xs shrink-0">
-            1 / 5
-          </span>
-          <div class="min-w-0">
-            <div class="text-[11px] text-slate-400 leading-none">גרור את הסיכה או לחץ במפה עבור:</div>
-            <div id="hudCurrentPointName" class="text-sm sm:text-base font-black text-amber-300 truncate mt-0.5">
-              שער ראשי
-            </div>
-          </div>
-        </div>
-
-        <!-- Timer + Exit Preview Button (if admin preview) -->
-        <div class="flex items-center gap-2 shrink-0">
-          <div class="px-3 py-1 rounded-xl bg-slate-950 border border-slate-700 flex items-center gap-1.5">
-            <i class="fa-regular fa-clock text-emerald-400 text-xs" id="timerIcon"></i>
-            <span id="timerDisplay" class="font-mono font-black text-base sm:text-lg text-emerald-400">02:00</span>
-          </div>
-          <button id="btnExitPreview" onclick="exitPreviewToAdmin()" class="hidden px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700">
-            חזור לעריכה
-          </button>
-        </div>
-      </div>
-
-      <!-- Quick Point Selector Pills -->
-      <div id="guardPointsPills" class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-        <!-- Populated by JS -->
-      </div>
-    </div>
-  </header>
-
-  <!-- =========================================================
-       MAIN FLEX AREA (SIDEBAR + MAP)
-  ========================================================== -->
-  <div class="flex-1 flex flex-row relative overflow-hidden min-h-0">
-
-    <!-- ADMIN SIDEBAR DRAWER (Right side in RTL) -->
-    <aside id="adminDrawer" class="w-full sm:w-[380px] bg-slate-900 border-l border-slate-800 flex flex-col z-20 h-full overflow-hidden shrink-0">
-      
-      <!-- Scrollable Admin Content -->
-      <div class="flex-1 overflow-y-auto p-3.5 space-y-3">
-
-        <!-- 1. Collapsible Settings Accordion -->
-        <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
-          <button type="button" onclick="toggleSection('adminSettingsBody', 'adminSettingsIcon')" class="w-full px-3.5 py-2.5 bg-slate-800/70 hover:bg-slate-800 flex items-center justify-between text-right">
-            <span class="text-xs sm:text-sm font-extrabold text-white flex items-center gap-2">
-              <i class="fa-solid fa-gear text-emerald-400"></i>
-              1. הגדרות זמן וטלפון רבש"צ
-            </span>
-            <i id="adminSettingsIcon" class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
-          </button>
-          <div id="adminSettingsBody" class="hidden p-3 space-y-2.5 border-t border-slate-800">
-            <div>
-              <label class="block text-[11px] font-bold text-slate-400 mb-1">שם הבוחן</label>
-              <input id="inputQuizTitle" type="text" value="בוחן התמצאות גזרת מגדל עוז"
-                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white outline-none focus:border-emerald-500" />
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-1">טלפון רבש"צ לתוצאות</label>
-                <input id="inputAdminPhone" type="tel" dir="ltr" value="053-7177033"
-                  class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white font-mono text-right outline-none focus:border-emerald-500" />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-1">זמן מוקצב</label>
-                <select id="inputTimeLimit" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-sm text-white outline-none focus:border-emerald-500">
-                  <option value="60">60 שניות</option>
-                  <option value="90">90 שניות</option>
-                  <option value="120" selected>120 שניות (2 דק')</option>
-                  <option value="180">180 שניות (3 דק')</option>
-                  <option value="300">300 שניות (5 דק')</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. Locations List Management -->
-        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 space-y-2.5">
-          <div class="flex items-center justify-between">
-            <span class="text-xs sm:text-sm font-extrabold text-white flex items-center gap-1.5">
-              <i class="fa-solid fa-location-dot text-amber-400"></i>
-              2. רשימת נקודות בבוחן (3-10)
-            </span>
-            <span id="adminPointsBadge" class="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              5 / 10
-            </span>
-          </div>
-
-          <p class="text-[11px] text-slate-400 leading-relaxed">
-            לחץ על המפה או גרור את סמן ה-<b>(+)</b> הכתום, הקלד שם נקודה ולחץ הוסף:
-          </p>
-
-          <!-- Add Point Row -->
-          <div class="flex gap-1.5">
-            <input id="inputNewPointName" type="text"
-              onkeydown="if(event.key==='Enter') addAdminPoint()"
-              placeholder="שם נקודה חדשה..."
-              class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-amber-400" />
-            <button onclick="addAdminPoint()" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm shrink-0">
-              + הוסף
-            </button>
-          </div>
-
-          <!-- Points List -->
-          <div id="adminPointsList" class="space-y-1.5 max-h-[38vh] overflow-y-auto pr-0.5">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Bottom Fixed Share Buttons in Admin Drawer (Only 2 Clean Buttons) -->
-      <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2 shrink-0">
-        <button onclick="shareQuizViaWhatsApp()" class="w-full py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg transition">
-          <i class="fa-brands fa-whatsapp text-lg"></i>
-          <span>שלח בוחן בוואטסאפ למאבטחים</span>
-        </button>
-        <button onclick="copyQuizShareLink()" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition">
-          <i class="fa-solid fa-link text-sky-400"></i>
-          <span>העתק קישור ישיר לבוחן</span>
-        </button>
-      </div>
-    </aside>
-
-    <!-- MAP CONTAINER -->
-    <main class="flex-1 relative h-full w-full overflow-hidden">
-      <div id="map"></div>
-    </main>
-
+<body>
+<div id="app">
+  <div class="top-bar">
+    <div id="status-badge" class="badge badge-admin">מצב רבש"צ - ניהול</div>
+    <div id="timer-box" style="display:none;" class="badge timer-badge">02:00</div>
+    <button id="btn-toggle-menu" class="btn btn-secondary" style="width: auto; padding: 6px 12px; font-size: 13px;">הגדרות בוחן</button>
   </div>
 
-  <!-- =========================================================
-       GUARD EXAM BOTTOM ACTION BAR (NEVER CUT OFF ON MOBILE!)
-  ========================================================== -->
-  <footer id="guardBottomBar" class="hidden bg-slate-900 border-t border-slate-800 px-3 pt-2.5 pb-4 sm:pb-3 shrink-0 z-30 shadow-2xl">
-    <div class="max-w-2xl mx-auto flex items-center gap-2">
-      <!-- Next / Prev Point Button -->
-      <button id="btnNextPoint" onclick="goToNextGuardPoint()"
-        class="flex-1 py-3.5 px-4 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg transition">
-        <i class="fa-solid fa-check"></i>
-        <span id="btnNextPointText">אשר מיקום והמשך לנקודה הבאה</span>
-      </button>
+  <div id="time-up-banner" class="time-up-banner">⚠️ תם הזמן! לא ניתן להזיז סיכות נוספות. לחץ הגש כעת.</div>
 
-      <!-- Always Visible Submit & Send WhatsApp Button -->
-      <button id="btnFinishQuiz" onclick="finishAndGradeQuiz(false)"
-        class="py-3.5 px-4 sm:px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg transition shrink-0">
-        <i class="fa-brands fa-whatsapp text-lg"></i>
-        <span>הגש ושלח בוואטסאפ</span>
-      </button>
-    </div>
-  </footer>
-
-  <!-- =========================================================
-       MODAL 1: GUARD WELCOME & NAME ENTRY (SHOWN IMMEDIATELY ON SHARED LINK)
-  ========================================================== -->
-  <div id="guardStartModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
-          <i class="fa-solid fa-shield-halved text-2xl"></i>
-        </div>
-        <div>
-          <span class="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">מצב נבחן - מערך אבטחה</span>
-          <h2 id="startModalTitle" class="text-lg sm:text-xl font-black text-white mt-0.5">בוחן התמצאות גזרת מגדל עוז</h2>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
-        <div>
-          <div class="text-[11px] text-slate-400">נקודות</div>
-          <div id="startModalCount" class="text-base font-black text-sky-400">5</div>
-        </div>
-        <div class="border-x border-slate-800">
-          <div class="text-[11px] text-slate-400">זמן מוקצב</div>
-          <div id="startModalTime" class="text-base font-black text-amber-400">02:00</div>
-        </div>
-        <div>
-          <div class="text-[11px] text-slate-400">חריגה מאפסת</div>
-          <div class="text-base font-black text-rose-400">200 מ'</div>
-        </div>
-      </div>
-
-      <div class="text-xs text-slate-300 bg-slate-800/50 p-3 rounded-xl space-y-1 leading-relaxed">
-        <div>• לחץ על המפה או גרור את הסיכה למיקום המדויק של כל נקודה.</div>
-        <div>• חריגה מעל <b>200 מטר</b> תיתן ציון <b>0</b>. ככל שתדייק הציון יעלה עד 100.</div>
-        <div>• בסיום לחץ על הכפתור הירוק בתחתית המסך לשליחה בוואטסאפ.</div>
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold text-slate-300 mb-1">שם מלא של המאבטח:</label>
-        <input id="inputGuardName" type="text"
-          onkeydown="if(event.key==='Enter') confirmGuardStart()"
-          placeholder="הקלד את שמך המלא..."
-          class="w-full bg-slate-950 border-2 border-slate-700 focus:border-emerald-500 rounded-xl px-4 py-3 text-base text-white font-bold outline-none" />
-        <p id="guardNameError" class="hidden text-xs text-rose-400 font-bold mt-1">נא להקליד שם מלא כדי להתחיל</p>
-      </div>
-
-      <button onclick="confirmGuardStart()" class="w-full py-3.5 px-5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-base flex items-center justify-center gap-2 shadow-xl transition">
-        <i class="fa-solid fa-play"></i>
-        <span>התחל בוחן עכשיו</span>
-      </button>
+  <div id="map-container">
+    <div id="map"></div>
+    <div id="target-bubble" class="target-bubble" style="display:none;">
+      <div style="font-size: 12px; color: #94a3b8;">גרור את הסיכה במפה למיקום:</div>
+      <div id="current-target-name" style="font-size: 18px; font-weight: 800; color: #38bdf8; margin-top: 4px;"></div>
     </div>
   </div>
 
-  <!-- =========================================================
-       MODAL 2: RESULTS & IMMEDIATE WHATSAPP SEND
-  ========================================================== -->
-  <div id="resultsModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl flex flex-col max-h-[92dvh] space-y-3.5">
-      
-      <!-- Score Summary Header -->
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
-        <div>
-          <span id="resStatusBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">הבוחן הסתיים</span>
-          <h2 class="text-xl font-black text-white mt-0.5">תוצאת בוחן התמצאות</h2>
-          <p id="resGuardSubtitle" class="text-xs text-slate-400"></p>
-        </div>
-        <div id="resScoreCircle" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-emerald-500/15 border-2 border-emerald-500 flex flex-col items-center justify-center shrink-0">
-          <span id="resScoreNumber" class="text-2xl sm:text-3xl font-black text-emerald-400 leading-none">95</span>
-          <span class="text-[10px] font-bold text-slate-300 mt-0.5">מתוך 100</span>
-        </div>
-      </div>
-
-      <!-- PROMINENT TOP WHATSAPP SEND BUTTON (NEVER HIDDEN!) -->
-      <a id="btnSendWhatsAppResult" href="#" target="_blank" rel="noopener noreferrer"
-        class="w-full py-4 px-5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-base sm:text-lg flex items-center justify-center gap-2.5 shadow-xl shrink-0 transition">
-        <i class="fa-brands fa-whatsapp text-2xl"></i>
-        <span>שלח תוצאה בוואטסאפ לרבש"צ</span>
-      </a>
-
-      <!-- Scrollable Per-Point Distance Breakdown -->
-      <div id="resBreakdownList" class="flex-1 overflow-y-auto space-y-1.5 pr-1 min-h-0">
-        <!-- Populated by JS -->
-      </div>
-
-      <!-- Minimal Bottom Controls -->
-      <div class="flex gap-2 pt-2 border-t border-slate-800 shrink-0">
-        <button onclick="toggleResultsMapInspection(true)" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-map"></i>
-          <span>צפה בסטיות על המפה</span>
-        </button>
-        <button onclick="retryGuardQuiz()" class="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-rotate-right"></i>
-          <span>נסה שוב</span>
-        </button>
-      </div>
-    </div>
+  <div id="action-panel" class="action-panel">
+    <button id="btn-main-action" class="btn btn-primary">שתף בוחן למאבטחים</button>
   </div>
 
-  <!-- Floating Return to Results Button when viewing map after quiz -->
-  <button id="btnBackToResultsModal" onclick="toggleResultsMapInspection(false)"
-    class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-40 px-5 py-3 rounded-2xl bg-emerald-500 text-slate-950 font-black text-sm shadow-2xl flex items-center gap-2 border-2 border-white">
-    <i class="fa-brands fa-whatsapp text-lg"></i>
-    <span>חזור לשליחת התוצאה בוואטסאפ</span>
-  </button>
-
-  <!-- Toast Notification -->
-  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-opacity duration-300">
-    <div class="bg-slate-900 border border-emerald-500 text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs sm:text-sm font-bold flex items-center gap-2">
-      <i class="fa-solid fa-circle-check text-emerald-400"></i>
-      <span id="toastText"></span>
+  <!-- סרגל צד לניהול נקודות -->
+  <div id="drawer" class="drawer">
+    <div class="drawer-header">
+      <h3 style="font-size: 16px;">הגדרות בוחן גזרה</h3>
+      <button id="btn-close-drawer" style="background:none; border:none; color:white; font-size: 22px; cursor: pointer;">&times;</button>
+    </div>
+    <div class="drawer-content">
+      <div class="form-group">
+        <label>שם הבוחן</label>
+        <input type="text" id="cfg-quiz-title" value="בוחן התמצאות גזרת מגדל עוז">
+      </div>
+      <div class="form-group">
+        <label>טלפון רבש"צ לקבלת תוצאות (לוואטסאפ)</label>
+        <input type="tel" id="cfg-phone" value="053-7177033">
+      </div>
+      <div class="form-group">
+        <label>זמן מוקצב (שניות)</label>
+        <select id="cfg-duration">
+          <option value="60">דקה אחת (60 שניות)</option>
+          <option value="90">דקה וחצי (90 שניות)</option>
+          <option value="120" selected>2 דקות (120 שניות)</option>
+          <option value="180">3 דקות (180 שניות)</option>
+          <option value="300">5 דקות (300 שניות)</option>
+        </select>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+        <h4 style="font-size: 14px; color: #94a3b8;">רשימת נקודות (לחץ על המפה להוספה)</h4>
+      </div>
+      <div id="points-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
     </div>
   </div>
+</div>
 
-  <script>
-    /******************************************************************
-     * 1. CONFIGURATION & STATE
-     ******************************************************************/
-    const MIGDAL_OZ_CENTER = [31.6410, 35.1436];
-    const MAX_ERROR_METERS = 200; // > 200m = 0 points
+<!-- מודאל כניסה למאבטח -->
+<div id="guard-modal" class="modal-overlay">
+  <div class="modal-box">
+    <h3 id="guard-modal-title" style="text-align: center; color: #38bdf8;">בוחן התמצאות גזרה</h3>
+    <div style="font-size: 14px; line-height: 1.5; color: #cbd5e1; text-align: center;">
+      עליך למקם בדיוק מרבי את כל הנקודות על גבי המפה.
+      <br>הזמן יתחיל ברגע לחיצה על "התחל בוחן".
+    </div>
+    <div class="form-group">
+      <label>שם מלא של המאבטח:</label>
+      <input type="text" id="guard-name-input" placeholder="הזן שם מלא...">
+    </div>
+    <button id="btn-start-guard-quiz" class="btn btn-success">התחל בוחן כעת</button>
+  </div>
+</div>
 
-    const DEFAULT_POINTS = [
-      { id: 'p1', name: 'שער ראשי - כניסה למגדל עוז', lat: 31.64272, lng: 35.14198 },
-      { id: 'p2', name: 'חמ"ל ביטחון ומזכירות', lat: 31.64105, lng: 35.14355 },
-      { id: 'p3', name: 'שער מזרחי / מטעים', lat: 31.64015, lng: 35.14675 },
-      { id: 'p4', name: 'מאגר מים / עמדה דרומית', lat: 31.63835, lng: 35.14390 },
-      { id: 'p5', name: 'פילבוקס צפוני', lat: 31.64295, lng: 35.14450 }
-    ];
+<!-- מודאל שיתוף רבש"צ -->
+<div id="share-modal" class="modal-overlay">
+  <div class="modal-box">
+    <h3 style="text-align: center;">שיתוף קישור בוחן</h3>
+    <div style="font-size: 13px; color: #94a3b8; text-align: center;">הקישור המקוצר מוכן לשליחה מהירה בוואטסאפ:</div>
+    <input type="text" id="share-link-input" readonly style="background:#0f172a; border:1px solid #334155; padding:10px; color:white; border-radius:8px; font-size:13px; text-align:left;" dir="ltr">
+    <button id="btn-send-whatsapp-link" class="btn btn-success">📲 שלח בוואטסאפ למאבטחים</button>
+    <button id="btn-copy-link" class="btn btn-secondary">העתק קישור</button>
+    <button id="btn-close-share" class="btn btn-secondary">סגור</button>
+  </div>
+</div>
 
-    let quizConfig = {
-      title: 'בוחן התמצאות גזרת מגדל עוז',
-      phone: '053-7177033',
-      timeLimitSec: 120,
-      points: JSON.parse(JSON.stringify(DEFAULT_POINTS))
-    };
+<!-- מודאל תוצאות -->
+<div id="results-modal" class="modal-overlay">
+  <div class="modal-box">
+    <h2 style="text-align:center; color:#38bdf8;">הבוחן הוגש בהצלחה!</h2>
+    <div id="score-display" style="text-align:center; font-size:42px; font-weight:900; color:#4ade80; margin:10px 0;">0</div>
+    <div id="results-breakdown" style="font-size:13px; max-height:180px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;"></div>
+    <button id="btn-send-results-wa" class="btn btn-success">📲 שלח תוצאות לרבש"צ בוואטסאפ</button>
+  </div>
+</div>
 
-    let appMode = 'admin'; // 'admin' | 'guard' | 'results'
-    let isLockedGuardLink = false; // True when opened via shared URL (?q= or #q=)
-    let isAdminDrawerOpen = true;
+<script>
+  // קואורדינטות בסיס - מגדל עוז
+  const MIGDAL_OZ = [31.6410, 35.1435];
+  let map, isGuardMode = false, quizTimer = null, timeLeft = 120;
+  let points = [
+    { id: 1, name: "שער ראשי - כניסה למגדל עוז", lat: 31.64272, lng: 35.14198 },
+    { id: 2, name: "חמ\"ל ביטחון ומזכירות", lat: 31.64105, lng: 35.14355 },
+    { id: 3, name: "שער מזרחי / מטעים", lat: 31.64015, lng: 35.14675 },
+    { id: 4, name: "מאגר מים / עמדה דרומית", lat: 31.63835, lng: 35.14390 },
+    { id: 5, name: "פילבוקס צפוני", lat: 31.64295, lng: 35.14450 }
+  ];
+  let guardMarkers = [];
+  let currentTargetIndex = 0;
+  let guardAnswers = [];
+  let finalCalculatedScore = 0;
+  let rawReportMessage = "";
 
-    let map = null;
-    let hybridLayer = null;
-    let cleanSatelliteLayer = null;
-    let adminMarkersLayer = null;
-    let adminCandidatePin = null;
-    let resultsLayerGroup = null;
+  // אתחול מפה
+  function initMap() {
+    map = L.map('map', { zoomControl: false, attributionControl: false }).setView(MIGDAL_OZ, 16);
+    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
 
-    let guardState = {
-      guardName: '',
-      activeIdx: 0,
-      placements: {}, // { pointId: { lat, lng, marker } }
-      timerInterval: null,
-      remainingSec: 120,
-      elapsedSec: 0
-    };
+    // בדיקה האם יש בוחן ב-URL
+    const params = new URLSearchParams(window.location.search);
+    const testData = params.get('q');
+    if (testData) {
+      loadQuizFromUrl(testData);
+    } else {
+      setupAdminMode();
+    }
+  }
 
-    /******************************************************************
-     * 2. INITIALIZATION & BULLETPROOF SHARED LINK ROUTING
-     ******************************************************************/
-    window.onload = function () {
-      initMap();
+  // --- מצב רבש"צ (מנהל) ---
+  function setupAdminMode() {
+    document.getElementById('status-badge').textContent = 'מצב רבש"צ - ניהול';
+    renderAdminMarkers();
+    renderPointsList();
 
-      // Check both ?q= / ?test= AND #q= / #test= so WhatsApp/Netlify never strips Exam Mode
-      const loadedFromLink = checkUrlForSharedQuiz();
+    document.getElementById('btn-toggle-menu').onclick = () => document.getElementById('drawer').classList.toggle('open');
+    document.getElementById('btn-close-drawer').onclick = () => document.getElementById('drawer').classList.remove('open');
 
-      if (loadedFromLink) {
-        isLockedGuardLink = true;
-        startGuardMode(true);
-      } else {
-        bindAdminInputs();
-        renderAdminPointsList();
-        renderAdminMapMarkers();
-      }
-    };
+    map.on('click', (e) => {
+      if (isGuardMode || points.length >= 10) return;
+      const newId = Date.now();
+      points.push({ id: newId, name: `נקודה חדשה ${points.length + 1}`, lat: e.latlng.lat, lng: e.latlng.lng });
+      renderAdminMarkers();
+      renderPointsList();
+    });
 
-    function initMap() {
-      map = L.map('map', {
-        center: MIGDAL_OZ_CENTER,
-        zoom: 16,
-        zoomControl: false
-      });
+    document.getElementById('btn-main-action').onclick = generateShareableLink;
+  }
 
-      L.control.zoom({ position: 'topleft' }).addTo(map);
+  let adminMarkers = [];
+  function renderAdminMarkers() {
+    adminMarkers.forEach(m => map.removeLayer(m));
+    adminMarkers = [];
 
-      // Google Hybrid (with labels for Admin & Results)
-      hybridLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&hl=iw&x={x}&y={y}&z={z}', {
-        maxZoom: 20
-      });
-
-      // Google Clean Satellite (no labels for Guard Exam so it's a real test)
-      cleanSatelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&hl=iw&x={x}&y={y}&z={z}', {
-        maxZoom: 20
-      });
-
-      hybridLayer.addTo(map);
-
-      adminMarkersLayer = L.layerGroup().addTo(map);
-      resultsLayerGroup = L.layerGroup().addTo(map);
-
-      // Candidate (+) draggable marker for Admin adding points
-      const plusIcon = L.divIcon({
-        html: `
-          <div class="tactical-pin-wrapper">
-            <div class="pin-label" style="border-color:#f59e0b; color:#fde68a;">סמן הוספה (+)</div>
-            <div class="pin-head" style="background:linear-gradient(135deg,#f59e0b,#d97706);"><span>+</span></div>
-            <div class="pin-shadow"></div>
-          </div>
-        `,
-        className: '',
-        iconSize: [0, 0]
-      });
-
-      adminCandidatePin = L.marker(MIGDAL_OZ_CENTER, {
+    points.forEach((p, idx) => {
+      const marker = L.marker([p.lat, p.lng], {
         draggable: true,
-        icon: plusIcon,
-        zIndexOffset: 900
+        title: p.name
       }).addTo(map);
 
-      map.on('click', function (e) {
-        if (appMode === 'admin') {
-          adminCandidatePin.setLatLng(e.latlng);
-        } else if (appMode === 'guard') {
-          placeActiveGuardPinAt(e.latlng.lat, e.latlng.lng);
-        }
+      marker.bindTooltip(`${idx + 1}. ${p.name}`, { permanent: true, direction: 'top', className: 'marker-label' });
+      marker.on('dragend', (ev) => {
+        const pos = ev.target.getLatLng();
+        p.lat = pos.lat;
+        p.lng = pos.lng;
       });
+      adminMarkers.push(marker);
+    });
+  }
 
-      window.addEventListener('resize', () => {
-        if (map) map.invalidateSize();
-      });
+  function renderPointsList() {
+    const list = document.getElementById('points-list');
+    list.innerHTML = '';
+    points.forEach((p, idx) => {
+      const card = document.createElement('div');
+      card.className = 'point-card';
+      card.innerHTML = `
+        <span style="font-weight:bold; color:#38bdf8;">${idx + 1}.</span>
+        <input type="text" value="${p.name}" onchange="updatePointName(${p.id}, this.value)">
+        <button onclick="deletePoint(${p.id})" style="background:none; border:none; color:#ef4444; font-size:16px; cursor:pointer;">🗑️</button>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  window.updatePointName = (id, newName) => {
+    const p = points.find(x => x.id === id);
+    if (p) p.name = newName;
+    renderAdminMarkers();
+  };
+
+  window.deletePoint = (id) => {
+    if (points.length <= 3) { alert('נדרשות לפחות 3 נקודות לבוחן.'); return; }
+    points = points.filter(x => x.id !== id);
+    renderAdminMarkers();
+    renderPointsList();
+  };
+
+  // יצירת קישור מקוצר
+  async function generateShareableLink() {
+    const payload = {
+      i: Date.now().toString(36), // ID ייחודי לבוחן לחסימת ניסיונות חוזרים
+      t: document.getElementById('cfg-quiz-title').value,
+      p: document.getElementById('cfg-phone').value,
+      d: parseInt(document.getElementById('cfg-duration').value),
+      pts: points.map(p => [p.name, Number(p.lat.toFixed(5)), Number(p.lng.toFixed(5))])
+    };
+
+    const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
+    const fullUrl = `${window.location.origin}${window.location.pathname}?q=${encoded}`;
+
+    document.getElementById('share-link-input').value = 'מייצר קישור מקוצר...';
+    document.getElementById('share-modal').style.display = 'flex';
+
+    let finalUrl = fullUrl;
+    try {
+      const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(fullUrl)}`);
+      if (res.ok) {
+        finalUrl = await res.text();
+      }
+    } catch (e) {
+      finalUrl = fullUrl;
     }
 
-    /******************************************************************
-     * 3. URL ENCODING / DECODING (SUPPORTS BOTH SEARCH & HASH)
-     ******************************************************************/
-    function encodeQuizPayload() {
-      const payload = {
-        t: quizConfig.title,
-        p: quizConfig.phone,
-        s: quizConfig.timeLimitSec,
-        l: quizConfig.points.map(pt => [pt.name, Number(pt.lat.toFixed(5)), Number(pt.lng.toFixed(5))])
+    document.getElementById('share-link-input').value = finalUrl;
+    document.getElementById('btn-copy-link').onclick = () => {
+      navigator.clipboard.writeText(finalUrl);
+      alert('הקישור הועתק ללוח!');
+    };
+
+    const waText = `🛡️ *${payload.t}*\nשלום, לפניך בוחן התמצאות גזרה (${payload.pts.length} נקודות, זמן: ${Math.floor(payload.d / 60)} דק').\n\n🔗 קישור לכניסה לבוחן:\n${finalUrl}\n\nבסיום יש להגיש את הבוחן ולשלוח את התוצאות. בהצלחה!`;
+    document.getElementById('btn-send-whatsapp-link').onclick = () => {
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`, '_blank');
+    };
+
+    document.getElementById('btn-close-share').onclick = () => document.getElementById('share-modal').style.display = 'none';
+  }
+
+  // --- מצב מאבטח ---
+  let quizData = null;
+  function loadQuizFromUrl(encoded) {
+    try {
+      quizData = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(encoded)))));
+      isGuardMode = true;
+      document.getElementById('status-badge').className = 'badge badge-test';
+      document.getElementById('status-badge').textContent = 'מצב מאבטח - בוחן פעיל';
+      document.getElementById('btn-toggle-menu').style.display = 'none';
+
+      // בדיקה אם הבוחן כבר הוגש בעבר במכשיר זה
+      const quizLockKey = `quiz_submitted_${quizData.i || quizData.t}`;
+      if (localStorage.getItem(quizLockKey)) {
+        alert('כבר הגשת בוחן זה בעבר ממכשיר זה. לא ניתן לבצע ניסיון נוסף.');
+        document.body.innerHTML = '<div style="display:flex;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:20px;"><h2>⚠️ הבוחן כבר הוגש</h2><p>לא ניתן לבצע ניסיון נוסף לבוחן זה.</p></div>';
+        return;
+      }
+
+      document.getElementById('guard-modal').style.display = 'flex';
+      document.getElementById('guard-modal-title').textContent = quizData.t;
+
+      document.getElementById('btn-start-guard-quiz').onclick = () => {
+        const name = document.getElementById('guard-name-input').value.trim();
+        if (!name) { alert('נא להזין שם מלא'); return; }
+        document.getElementById('guard-modal').style.display = 'none';
+        startGuardExam(name);
       };
-      const jsonStr = JSON.stringify(payload);
-      // UTF-8 safe base64
-      return btoa(encodeURIComponent(jsonStr));
+    } catch (e) {
+      alert('קישור הבוחן אינו תקין');
     }
+  }
 
-    function decodeQuizPayload(encodedStr) {
-      try {
-        const cleaned = encodedStr.trim();
-        const jsonStr = decodeURIComponent(atob(cleaned));
-        const data = JSON.parse(jsonStr);
-        if (data && Array.isArray(data.l) && data.l.length >= 1) {
-          quizConfig.title = data.t || 'בוחן התמצאות גזרה';
-          quizConfig.phone = data.p || '053-7177033';
-          quizConfig.timeLimitSec = Number(data.s) || 120;
-          quizConfig.points = data.l.map((item, idx) => ({
-            id: 'pt_' + idx,
-            name: item[0],
-            lat: Number(item[1]),
-            lng: Number(item[2])
-          }));
-          return true;
-        }
-      } catch (err) {
-        console.warn('Failed to decode quiz payload:', err);
+  function startGuardExam(guardName) {
+    timeLeft = quizData.d || 120;
+    document.getElementById('timer-box').style.display = 'block';
+    updateTimerDisplay();
+
+    // שעון עצר
+    quizTimer = setInterval(() => {
+      timeLeft--;
+      updateTimerDisplay();
+      if (timeLeft <= 0) {
+        clearInterval(quizTimer);
+        handleTimeUp();
       }
-      return false;
-    }
+    }, 1000);
 
-    function checkUrlForSharedQuiz() {
-      // 1. Check query string (?q=... or ?test=...)
-      const searchParams = new URLSearchParams(window.location.search);
-      let rawParam = searchParams.get('q') || searchParams.get('test') || searchParams.get('quiz');
+    // הכנת נקודות
+    points = quizData.pts.map((p, idx) => ({ id: idx + 1, name: p[0], lat: p[1], lng: p[2] }));
+    guardAnswers = points.map(p => ({ id: p.id, name: p.name, lat: MIGDAL_OZ[0], lng: MIGDAL_OZ[1] }));
 
-      // 2. Check URL hash (#q=... or #test=...)
-      if (!rawParam && window.location.hash) {
-        const hashClean = window.location.hash.replace(/^#/, '');
-        const hashParams = new URLSearchParams(hashClean);
-        rawParam = hashParams.get('q') || hashParams.get('test') || hashClean;
-      }
+    // הצגת סיכות המאבטח בגרירה
+    renderGuardMarkers();
 
-      if (rawParam) {
-        // Fix spaces that some mobile browsers convert from '+'
-        const normalized = rawParam.replace(/ /g, '+');
-        if (decodeQuizPayload(normalized)) {
-          return true;
-        }
-      }
-      return false;
-    }
+    const mainBtn = document.getElementById('btn-main-action');
+    mainBtn.textContent = 'הגש בוחן עכשיו';
+    mainBtn.className = 'btn btn-danger';
+    mainBtn.onclick = () => submitQuiz(guardName);
+  }
 
-    function buildShareableExamUrl() {
-      const code = encodeQuizPayload();
-      const baseUrl = window.location.origin + window.location.pathname;
-      // Include in both query and hash so no redirect or mobile browser loses it
-      return `${baseUrl}?q=${encodeURIComponent(code)}#q=${encodeURIComponent(code)}`;
-    }
+  function updateTimerDisplay() {
+    const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+    const secs = (timeLeft % 60).toString().padStart(2, '0');
+    document.getElementById('timer-box').textContent = `${mins}:${secs}`;
+  }
 
-    /******************************************************************
-     * 4. ADMIN MODE FUNCTIONS
-     ******************************************************************/
-    function bindAdminInputs() {
-      const titleEl = document.getElementById('inputQuizTitle');
-      const phoneEl = document.getElementById('inputAdminPhone');
-      const timeEl = document.getElementById('inputTimeLimit');
+  function renderGuardMarkers() {
+    guardMarkers.forEach(m => map.removeLayer(m));
+    guardMarkers = [];
 
-      titleEl.value = quizConfig.title;
-      phoneEl.value = quizConfig.phone;
-      timeEl.value = String(quizConfig.timeLimitSec);
+    // פיזור ראשוני קל סביב המרכז כדי שלא ייערמו בדיוק באותה נקודה
+    points.forEach((p, idx) => {
+      const offsetLat = (Math.random() - 0.5) * 0.002;
+      const offsetLng = (Math.random() - 0.5) * 0.002;
+      const initialPos = [MIGDAL_OZ[0] + offsetLat, MIGDAL_OZ[1] + offsetLng];
+      guardAnswers[idx].lat = initialPos[0];
+      guardAnswers[idx].lng = initialPos[1];
 
-      titleEl.oninput = e => { quizConfig.title = e.target.value.trim() || 'בוחן התמצאות'; };
-      phoneEl.oninput = e => { quizConfig.phone = e.target.value.trim(); };
-      timeEl.onchange = e => { quizConfig.timeLimitSec = parseInt(e.target.value, 10) || 120; };
-    }
+      const marker = L.marker(initialPos, { draggable: true }).addTo(map);
+      marker.bindTooltip(`${idx + 1}. ${p.name}`, { permanent: true, direction: 'top' });
 
-    function toggleSection(bodyId, iconId) {
-      const body = document.getElementById(bodyId);
-      const icon = document.getElementById(iconId);
-      body.classList.toggle('hidden');
-      icon.classList.toggle('fa-chevron-down');
-      icon.classList.toggle('fa-chevron-up');
-    }
-
-    function toggleAdminDrawer() {
-      const drawer = document.getElementById('adminDrawer');
-      const btnText = document.getElementById('btnDrawerText');
-      isAdminDrawerOpen = !isAdminDrawerOpen;
-      if (isAdminDrawerOpen) {
-        drawer.classList.remove('hidden');
-        btnText.textContent = 'הסתר תפריט';
-      } else {
-        drawer.classList.add('hidden');
-        btnText.textContent = 'פתח תפריט ניהול';
-      }
-      setTimeout(() => map.invalidateSize(), 200);
-    }
-
-    function addAdminPoint() {
-      if (quizConfig.points.length >= 10) {
-        showToast('ניתן להגדיר עד 10 נקודות לכל היותר');
-        return;
-      }
-      const input = document.getElementById('inputNewPointName');
-      const name = input.value.trim();
-      if (!name) {
-        showToast('הקלד שם לנקודה תחילה');
-        input.focus();
-        return;
-      }
-      const pos = adminCandidatePin.getLatLng();
-      quizConfig.points.push({
-        id: 'p_' + Date.now(),
-        name,
-        lat: Number(pos.lat.toFixed(5)),
-        lng: Number(pos.lng.toFixed(5))
-      });
-      input.value = '';
-      adminCandidatePin.setLatLng([pos.lat + 0.0003, pos.lng + 0.0003]);
-      renderAdminPointsList();
-      renderAdminMapMarkers();
-      showToast(`הנקודה "${name}" נוספה`);
-    }
-
-    function deleteAdminPoint(id) {
-      quizConfig.points = quizConfig.points.filter(p => p.id !== id);
-      renderAdminPointsList();
-      renderAdminMapMarkers();
-    }
-
-    function updateAdminPointName(id, newName) {
-      const pt = quizConfig.points.find(p => p.id === id);
-      if (pt && newName.trim()) {
-        pt.name = newName.trim();
-        renderAdminMapMarkers();
-      }
-    }
-
-    function renderAdminPointsList() {
-      const list = document.getElementById('adminPointsList');
-      const badge = document.getElementById('adminPointsBadge');
-      badge.textContent = `${quizConfig.points.length} / 10`;
-
-      list.innerHTML = quizConfig.points.map((pt, i) => `
-        <div class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2 flex-1 min-w-0">
-            <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold text-xs flex items-center justify-center shrink-0">
-              ${i + 1}
-            </span>
-            <input type="text" value="${escapeHtml(pt.name)}"
-              onchange="updateAdminPointName('${pt.id}', this.value)"
-              class="w-full bg-transparent text-xs sm:text-sm font-bold text-white outline-none focus:bg-slate-950 px-1.5 py-0.5 rounded" />
-          </div>
-          <button onclick="deleteAdminPoint('${pt.id}')" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 text-xs flex items-center justify-center shrink-0">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
-        </div>
-      `).join('');
-    }
-
-    function renderAdminMapMarkers() {
-      adminMarkersLayer.clearLayers();
-      quizConfig.points.forEach((pt, idx) => {
-        const icon = L.divIcon({
-          html: `
-            <div class="tactical-pin-wrapper">
-              <div class="pin-label"><span>#${idx + 1} ${escapeHtml(pt.name)}</span></div>
-              <div class="pin-head" style="background:linear-gradient(135deg,#10b981,#059669);"><span>${idx + 1}</span></div>
-              <div class="pin-shadow"></div>
-            </div>
-          `,
-          className: '',
-          iconSize: [0, 0]
-        });
-
-        const m = L.marker([pt.lat, pt.lng], { draggable: true, icon }).addTo(adminMarkersLayer);
-        m.on('dragend', e => {
-          const pos = e.target.getLatLng();
-          pt.lat = Number(pos.lat.toFixed(5));
-          pt.lng = Number(pos.lng.toFixed(5));
-        });
-      });
-    }
-
-    function copyQuizShareLink() {
-      if (quizConfig.points.length < 3) {
-        showToast('יש להגדיר לפחות 3 נקודות בבוחן');
-        return;
-      }
-      const url = buildShareableExamUrl();
-      copyToClipboard(url);
-      showToast('הקישור לבוחן הועתק! שלח אותו למאבטחים.');
-    }
-
-    function shareQuizViaWhatsApp() {
-      if (quizConfig.points.length < 3) {
-        showToast('יש להגדיר לפחות 3 נקודות בבוחן');
-        return;
-      }
-      const url = buildShareableExamUrl();
-      const msg = [
-        `🛡️ *${quizConfig.title}*`,
-        `שלום, היכנסו לקישור הבא לביצוע בוחן התמצאות מהיר בגזרה (${quizConfig.points.length} נקודות, זמן: ${formatMMSS(quizConfig.timeLimitSec)} דק'):`,
-        ``,
-        url
-      ].join('\n');
-
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-    }
-
-    /******************************************************************
-     * 5. GUARD EXAM MODE (CLEAN, FULLSCREEN, MOBILE-SAFE)
-     ******************************************************************/
-    function startGuardMode(fromSharedLink = false) {
-      if (quizConfig.points.length < 3) {
-        showToast('יש להגדיר לפחות 3 נקודות לפני תחילת בוחן');
-        return;
-      }
-
-      if (guardState.timerInterval) clearInterval(guardState.timerInterval);
-      appMode = 'guard';
-
-      // Hide ALL Admin Elements completely
-      document.getElementById('adminHeader').classList.add('hidden');
-      document.getElementById('adminDrawer').classList.add('hidden');
-      document.getElementById('resultsModal').classList.add('hidden');
-      document.getElementById('btnBackToResultsModal').classList.add('hidden');
-
-      // Show Guard Header & Bottom Action Bar
-      document.getElementById('guardHeaderHud').classList.remove('hidden');
-      document.getElementById('guardBottomBar').classList.remove('hidden');
-
-      // Only show "Exit Preview" button if Admin clicked preview locally
-      const exitBtn = document.getElementById('btnExitPreview');
-      if (fromSharedLink || isLockedGuardLink) {
-        exitBtn.classList.add('hidden');
-      } else {
-        exitBtn.classList.remove('hidden');
-      }
-
-      // Switch to Clean Satellite (no street/place labels) for authentic test
-      if (map.hasLayer(hybridLayer)) map.removeLayer(hybridLayer);
-      if (!map.hasLayer(cleanSatelliteLayer)) cleanSatelliteLayer.addTo(map);
-
-      // Clear Admin Pins & Results
-      adminMarkersLayer.clearLayers();
-      resultsLayerGroup.clearLayers();
-      if (adminCandidatePin) adminCandidatePin.remove();
-      clearGuardMarkers();
-
-      // Populate Welcome Modal
-      document.getElementById('startModalTitle').textContent = quizConfig.title;
-      document.getElementById('startModalCount').textContent = quizConfig.points.length;
-      document.getElementById('startModalTime').textContent = formatMMSS(quizConfig.timeLimitSec);
-      document.getElementById('guardNameError').classList.add('hidden');
-      document.getElementById('guardStartModal').classList.remove('hidden');
-
-      setTimeout(() => {
-        map.invalidateSize();
-        fitMapToQuizArea();
-      }, 150);
-    }
-
-    function fitMapToQuizArea() {
-      if (quizConfig.points.length > 0) {
-        const bounds = L.latLngBounds(quizConfig.points.map(p => [p.lat, p.lng]));
-        map.fitBounds(bounds.pad(0.35), { maxZoom: 17 });
-      } else {
-        map.setView(MIGDAL_OZ_CENTER, 16);
-      }
-    }
-
-    function confirmGuardStart() {
-      const nameInput = document.getElementById('inputGuardName');
-      const name = nameInput.value.trim();
-      if (!name) {
-        document.getElementById('guardNameError').classList.remove('hidden');
-        nameInput.focus();
-        return;
-      }
-
-      guardState.guardName = name;
-      document.getElementById('guardStartModal').classList.add('hidden');
-
-      clearGuardMarkers();
-      guardState.placements = {};
-      guardState.activeIdx = 0;
-
-      selectGuardPoint(0);
-      startGuardTimer(quizConfig.timeLimitSec);
-    }
-
-    function clearGuardMarkers() {
-      Object.values(guardState.placements).forEach(pl => {
-        if (pl.marker) pl.marker.remove();
-      });
-    }
-
-    function selectGuardPoint(idx) {
-      if (idx < 0 || idx >= quizConfig.points.length) return;
-      guardState.activeIdx = idx;
-      const pt = quizConfig.points[idx];
-
-      // Spawn pin at map center if not placed yet
-      if (!guardState.placements[pt.id]) {
-        const c = map.getCenter();
-        guardState.placements[pt.id] = {
-          lat: c.lat,
-          lng: c.lng,
-          marker: null
-        };
-      }
-
-      // Refresh markers so active point is highlighted in orange
-      quizConfig.points.forEach((p, i) => {
-        if (guardState.placements[p.id]) {
-          renderSingleGuardPin(p, i, guardState.placements[p.id]);
-        }
+      marker.on('dragend', (ev) => {
+        const pos = ev.target.getLatLng();
+        guardAnswers[idx].lat = pos.lat;
+        guardAnswers[idx].lng = pos.lng;
       });
 
-      // Update Top HUD & Bottom Action Button
-      document.getElementById('hudPointBadge').textContent = `${idx + 1} / ${quizConfig.points.length}`;
-      document.getElementById('hudCurrentPointName').textContent = pt.name;
+      guardMarkers.push(marker);
+    });
+  }
 
-      const nextBtnText = document.getElementById('btnNextPointText');
-      if (idx < quizConfig.points.length - 1) {
-        nextBtnText.textContent = `אשר מיקום והמשך לנקודה ${idx + 2}`;
-      } else {
-        nextBtnText.textContent = `אשר מיקום (נקודה אחרונה)`;
+  // תם הזמן - נעילת מפה ואפשרות הגשה בלבד
+  function handleTimeUp() {
+    document.getElementById('time-up-banner').style.display = 'block';
+    document.getElementById('timer-box').textContent = '00:00';
+    // נעל את כל הסיכות
+    guardMarkers.forEach(m => m.dragging && m.dragging.disable());
+    map.dragging.disable();
+    alert('הזמן תם! הסיכות ננעלו. לחץ על כפתור ההגשה לקבלת הציון.');
+  }
+
+  // חישוב מרחק במטרים (Haversine)
+  function getDistanceInMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371e3;
+    const phi1 = lat1 * Math.PI / 180;
+    const phi2 = lat2 * Math.PI / 180;
+    const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+    const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+              Math.cos(phi1) * Math.cos(phi2) *
+              Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c);
+  }
+
+  // הגשת בוחן
+  function submitQuiz(guardName) {
+    if (quizTimer) clearInterval(quizTimer);
+
+    // נעילת ניסיון נוסף ב-localStorage
+    const quizLockKey = `quiz_submitted_${quizData.i || quizData.t}`;
+    localStorage.setItem(quizLockKey, 'true');
+
+    let totalScore = 0;
+    let reportRows = [];
+    const breakdown = document.getElementById('results-breakdown');
+    breakdown.innerHTML = '';
+
+    points.forEach((truth, idx) => {
+      const userLoc = guardAnswers[idx];
+      const dist = getDistanceInMeters(truth.lat, truth.lng, userLoc.lat, userLoc.lng);
+
+      // ניקוד: מעל 200 מטר = 0 נקודות, יחסי עד 0 מטר = 100 נקודות
+      let score = 0;
+      if (dist <= 200) {
+        score = Math.max(0, Math.round(100 - (dist / 200) * 100));
       }
+      totalScore += score;
 
-      renderGuardPills();
-    }
+      reportRows.push(`📍 *${truth.name}*: סטייה של ${dist} מטר (ציון: ${score})`);
 
-    function placeActiveGuardPinAt(lat, lng) {
-      const idx = guardState.activeIdx;
-      const pt = quizConfig.points[idx];
-      if (!pt) return;
+      const row = document.createElement('div');
+      row.style.cssText = 'background:#0f172a; padding:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;';
+      row.innerHTML = `
+        <div><b>${truth.name}</b><br><small style="color:#94a3b8;">סטייה: ${dist} מטר</small></div>
+        <div style="font-weight:bold; color:${score > 70 ? '#4ade80' : score > 40 ? '#facc15' : '#ef4444'}">${score} נק'</div>
+      `;
+      breakdown.appendChild(row);
+    });
 
-      if (!guardState.placements[pt.id]) {
-        guardState.placements[pt.id] = { lat, lng, marker: null };
-      } else {
-        guardState.placements[pt.id].lat = lat;
-        guardState.placements[pt.id].lng = lng;
-      }
+    finalCalculatedScore = Math.round(totalScore / points.length);
+    document.getElementById('score-display').textContent = `${finalCalculatedScore}`;
+    document.getElementById('results-modal').style.display = 'flex';
 
-      renderSingleGuardPin(pt, idx, guardState.placements[pt.id]);
-      renderGuardPills();
-    }
+    // הכנת הודעת הוואטסאפ
+    const phone = quizData.p ? quizData.p.replace(/[^0-9]/g, '').replace(/^0/, '972') : '';
+    const message = `📋 *תוצאות בוחן התמצאות גזרה*\n` +
+                    `👤 מאבטח: *${guardName}*\n` +
+                    `🎯 ציון סופי: *${finalCalculatedScore} / 100*\n\n` +
+                    `פירוט נקודות:\n` +
+                    reportRows.join('\n');
 
-    function renderSingleGuardPin(pt, idx, placement) {
-      const isActive = (idx === guardState.activeIdx);
-      const bg = isActive
-        ? 'linear-gradient(135deg, #f59e0b, #d97706)'
-        : 'linear-gradient(135deg, #0ea5e9, #0284c7)';
+    document.getElementById('btn-send-results-wa').onclick = () => {
+      const waUrl = phone 
+        ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+      window.open(waUrl, '_blank');
+    };
+  }
 
-      const icon = L.divIcon({
-        html: `
-          <div class="tactical-pin-wrapper">
-            ${isActive ? '<div class="pulse-ring"></div>' : ''}
-            <div class="pin-label ${isActive ? 'active-pin-label' : ''}">
-              <span>#${idx + 1} ${escapeHtml(pt.name)}</span>
-            </div>
-            <div class="pin-head" style="background:${bg};">
-              <span>${idx + 1}</span>
-            </div>
-            <div class="pin-shadow"></div>
-          </div>
-        `,
-        className: '',
-        iconSize: [0, 0]
-      });
-
-      if (placement.marker) {
-        placement.marker.setLatLng([placement.lat, placement.lng]);
-        placement.marker.setIcon(icon);
-        placement.marker.setZIndexOffset(isActive ? 1000 : 500);
-      } else {
-        const m = L.marker([placement.lat, placement.lng], {
-          draggable: true,
-          icon,
-          zIndexOffset: isActive ? 1000 : 500
-        }).addTo(map);
-
-        m.on('dragend', e => {
-          const pos = e.target.getLatLng();
-          placement.lat = pos.lat;
-          placement.lng = pos.lng;
-        });
-
-        m.on('click', () => selectGuardPoint(idx));
-        placement.marker = m;
-      }
-    }
-
-    function goToNextGuardPoint() {
-      const nextIdx = (guardState.activeIdx + 1) % quizConfig.points.length;
-      selectGuardPoint(nextIdx);
-    }
-
-    function renderGuardPills() {
-      const container = document.getElementById('guardPointsPills');
-      container.innerHTML = quizConfig.points.map((pt, i) => {
-        const isActive = (i === guardState.activeIdx);
-        const isPlaced = !!guardState.placements[pt.id];
-        let cls = 'bg-slate-950 border-slate-700 text-slate-300';
-        if (isActive) cls = 'bg-amber-500 border-white text-slate-950 font-black';
-        else if (isPlaced) cls = 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 font-bold';
-
-        return `
-          <button onclick="selectGuardPoint(${i})" class="px-2.5 py-1 rounded-lg border text-xs flex items-center gap-1 shrink-0 ${cls}">
-            <span>${i + 1}. ${escapeHtml(pt.name)}</span>
-          </button>
-        `;
-      }).join('');
-    }
-
-    function startGuardTimer(seconds) {
-      if (guardState.timerInterval) clearInterval(guardState.timerInterval);
-      guardState.remainingSec = seconds;
-      guardState.elapsedSec = 0;
-      const disp = document.getElementById('timerDisplay');
-      disp.textContent = formatMMSS(seconds);
-
-      guardState.timerInterval = setInterval(() => {
-        guardState.remainingSec--;
-        guardState.elapsedSec++;
-        disp.textContent = formatMMSS(Math.max(0, guardState.remainingSec));
-
-        if (guardState.remainingSec <= 0) {
-          clearInterval(guardState.timerInterval);
-          finishAndGradeQuiz(true);
-        }
-      }, 1000);
-    }
-
-    /******************************************************************
-     * 6. HAVERSINE GRADING & WHATSAPP REPORT
-     ******************************************************************/
-    function haversineMeters(lat1, lon1, lat2, lon2) {
-      const R = 6371000;
-      const toRad = d => (d * Math.PI) / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat / 2) ** 2 +
-                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-      return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-    }
-
-    function scoreFromMeters(meters) {
-      if (meters === null || meters === undefined || meters > MAX_ERROR_METERS) return 0;
-      return Math.max(0, Math.min(100, Math.round(100 * (1 - meters / MAX_ERROR_METERS))));
-    }
-
-    function finishAndGradeQuiz(timeOut = false) {
-      if (guardState.timerInterval) clearInterval(guardState.timerInterval);
-      appMode = 'results';
-
-      // Switch back to Hybrid layer so labels are visible on the review map
-      if (map.hasLayer(cleanSatelliteLayer)) map.removeLayer(cleanSatelliteLayer);
-      if (!map.hasLayer(hybridLayer)) hybridLayer.addTo(map);
-
-      document.getElementById('guardHeaderHud').classList.add('hidden');
-      document.getElementById('guardBottomBar').classList.add('hidden');
-
-      clearGuardMarkers();
-      resultsLayerGroup.clearLayers();
-
-      let sumScores = 0;
-      const rows = [];
-
-      quizConfig.points.forEach((pt, idx) => {
-        const pl = guardState.placements[pt.id];
-        let dist = null;
-        let score = 0;
-        if (pl) {
-          dist = haversineMeters(pt.lat, pt.lng, pl.lat, pl.lng);
-          score = scoreFromMeters(dist);
-        }
-        sumScores += score;
-        rows.push({ index: idx + 1, name: pt.name, dist, score });
-
-        // True location marker on map
-        L.marker([pt.lat, pt.lng], {
-          icon: L.divIcon({
-            html: `<div class="tactical-pin-wrapper"><div class="pin-label" style="border-color:#10b981;">✓ ${escapeHtml(pt.name)}</div><div class="pin-head" style="background:#10b981;"><span>✓</span></div></div>`,
-            className: '',
-            iconSize: [0, 0]
-          })
-        }).addTo(resultsLayerGroup);
-
-        if (pl) {
-          const color = score >= 75 ? '#10b981' : (score > 0 ? '#f59e0b' : '#f43f5e');
-          L.polyline([[pt.lat, pt.lng], [pl.lat, pl.lng]], { color, weight: 3, dashArray: '5, 5' }).addTo(resultsLayerGroup);
-          L.marker([pl.lat, pl.lng], {
-            icon: L.divIcon({
-              html: `<div class="tactical-pin-wrapper"><div class="pin-label" style="border-color:${color};">${dist} מ' (${score} נק')</div><div class="pin-head" style="background:${color};width:26px;height:26px;"><span>${idx + 1}</span></div></div>`,
-              className: '',
-              iconSize: [0, 0]
-            })
-          }).addTo(resultsLayerGroup);
-        }
-      });
-
-      const finalScore = Math.round(sumScores / quizConfig.points.length);
-      const timeUsed = formatMMSS(guardState.elapsedSec);
-
-      document.getElementById('resScoreNumber').textContent = finalScore;
-      document.getElementById('resGuardSubtitle').textContent = `מאבטח: ${guardState.guardName} | זמן: ${timeUsed}`;
-      document.getElementById('resStatusBadge').textContent = timeOut ? 'נגמר הזמן - הוגש אוטומטית' : 'הבוחן הושלם';
-
-      document.getElementById('resBreakdownList').innerHTML = rows.map(r => {
-        const distLabel = r.dist !== null ? `סטייה: ${r.dist} מטר` : 'לא סומן';
-        const colorCls = r.score >= 75 ? 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10' : (r.score > 0 ? 'text-amber-400 border-amber-500/40 bg-amber-500/10' : 'text-rose-400 border-rose-500/40 bg-rose-500/10');
-        return `
-          <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
-            <div class="min-w-0">
-              <div class="text-xs sm:text-sm font-bold text-white truncate">${r.index}. ${escapeHtml(r.name)}</div>
-              <div class="text-[11px] text-slate-400">${distLabel}</div>
-            </div>
-            <div class="px-2.5 py-1 rounded-lg border font-black text-xs shrink-0 ${colorCls}">
-              ${r.score} נק'
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      // Build WhatsApp Message to Security Coordinator
-      const reportLines = [
-        `📍 *תוצאת בוחן התמצאות - מגדל עוז*`,
-        `👤 *מאבטח:* ${guardState.guardName}`,
-        `🏆 *ציון סופי:* ${finalScore} מתוך 100`,
-        `⏱️ *זמן ביצוע:* ${timeUsed}`,
-        ``,
-        `*פירוט סטיות במטרים:*`
-      ];
-      rows.forEach(r => {
-        const icon = r.score >= 75 ? '🟢' : (r.score > 0 ? '🟡' : '🔴');
-        const dText = r.dist !== null ? `${r.dist} מטר` : 'לא סומן';
-        reportLines.push(`${icon} ${r.index}. *${r.name}*: סטייה ${dText} (ציון: ${r.score})`);
-      });
-
-      const digits = (quizConfig.phone || '').replace(/\D/g, '');
-      const intlPhone = digits.startsWith('0') ? '972' + digits.slice(1) : (digits || '972537177033');
-      const waUrl = `https://api.whatsapp.com/send?phone=${intlPhone}&text=${encodeURIComponent(reportLines.join('\n'))}`;
-
-      document.getElementById('btnSendWhatsAppResult').href = waUrl;
-      document.getElementById('resultsModal').classList.remove('hidden');
-    }
-
-    function toggleResultsMapInspection(inspectMap) {
-      if (inspectMap) {
-        document.getElementById('resultsModal').classList.add('hidden');
-        document.getElementById('btnBackToResultsModal').classList.remove('hidden');
-        fitMapToQuizArea();
-      } else {
-        document.getElementById('btnBackToResultsModal').classList.add('hidden');
-        document.getElementById('resultsModal').classList.remove('hidden');
-      }
-    }
-
-    function retryGuardQuiz() {
-      document.getElementById('resultsModal').classList.add('hidden');
-      startGuardMode(isLockedGuardLink);
-    }
-
-    function exitPreviewToAdmin() {
-      if (guardState.timerInterval) clearInterval(guardState.timerInterval);
-      appMode = 'admin';
-
-      document.getElementById('guardStartModal').classList.add('hidden');
-      document.getElementById('resultsModal').classList.add('hidden');
-      document.getElementById('guardHeaderHud').classList.add('hidden');
-      document.getElementById('guardBottomBar').classList.add('hidden');
-      document.getElementById('btnBackToResultsModal').classList.add('hidden');
-
-      document.getElementById('adminHeader').classList.remove('hidden');
-      if (isAdminDrawerOpen) document.getElementById('adminDrawer').classList.remove('hidden');
-
-      clearGuardMarkers();
-      resultsLayerGroup.clearLayers();
-
-      if (map.hasLayer(cleanSatelliteLayer)) map.removeLayer(cleanSatelliteLayer);
-      if (!map.hasLayer(hybridLayer)) hybridLayer.addTo(map);
-
-      if (adminCandidatePin) adminCandidatePin.addTo(map);
-      renderAdminMapMarkers();
-      setTimeout(() => map.invalidateSize(), 150);
-    }
-
-    /******************************************************************
-     * 7. HELPERS
-     ******************************************************************/
-    function formatMMSS(sec) {
-      const m = Math.floor(sec / 60);
-      const s = sec % 60;
-      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-    }
-
-    function copyToClipboard(text) {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); } catch (e) {}
-      document.body.removeChild(ta);
-    }
-
-    let toastTimer = null;
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      document.getElementById('toastText').textContent = msg;
-      t.classList.remove('opacity-0');
-      t.classList.add('opacity-100');
-      if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        t.classList.remove('opacity-100');
-        t.classList.add('opacity-0');
-      }, 2800);
-    }
-
-    function escapeHtml(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-  </script>
+  window.onload = initMap;
+</script>
 </body>
 </html>
