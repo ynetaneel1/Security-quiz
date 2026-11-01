@@ -7,15 +7,13 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     html, body { width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: #0f172a; color: #f8fafc; }
     #app { display: flex; flex-direction: column; width: 100%; height: 100%; height: 100dvh; position: relative; }
     
-    /* מפה */
     #map-container { flex: 1; width: 100%; position: relative; }
     #map { width: 100%; height: 100%; }
 
-    /* סרגל עליון */
     .top-bar {
       display: flex; justify-content: space-between; align-items: center;
       padding: 10px 14px; background: rgba(15, 23, 42, 0.95);
@@ -26,7 +24,6 @@
     .badge-test { background: #10b981; color: white; }
     .timer-badge { background: #ef4444; color: white; font-family: monospace; font-size: 16px; padding: 4px 12px; }
 
-    /* סרגל תחתון קבוע */
     .action-panel {
       position: absolute; bottom: 0; left: 0; right: 0; z-index: 1000;
       background: rgba(15, 23, 42, 0.95); padding: 12px 16px;
@@ -44,7 +41,6 @@
     .btn-secondary { background: #334155; color: #cbd5e1; }
     .btn:active { transform: scale(0.98); opacity: 0.9; }
 
-    /* פאנל ניהול נגלל */
     .drawer {
       position: absolute; top: 50px; bottom: 0; right: 0; width: 100%; max-width: 380px;
       background: #1e293b; z-index: 1001; transform: translateX(100%); transition: transform 0.3s ease;
@@ -63,15 +59,13 @@
       color: white; font-size: 14px; width: 100%; padding: 4px; outline: none;
     }
 
-    /* התראת זמן תם */
     .time-up-banner {
       background: #ef4444; color: white; text-align: center; padding: 8px;
       font-weight: 700; font-size: 14px; display: none;
     }
 
-    /* מודאלים */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000;
       display: none; align-items: center; justify-content: center; padding: 16px;
     }
     .modal-box {
@@ -85,12 +79,6 @@
       background: #0f172a; border: 1px solid #334155; border-radius: 8px;
       padding: 10px; color: white; font-size: 14px; outline: none;
     }
-
-    .target-bubble {
-      position: absolute; top: 60px; left: 16px; right: 16px; z-index: 1000;
-      background: rgba(15, 23, 42, 0.95); border: 2px solid #3b82f6; border-radius: 10px;
-      padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center;
-    }
   </style>
 </head>
 <body>
@@ -101,14 +89,10 @@
     <button id="btn-toggle-menu" class="btn btn-secondary" style="width: auto; padding: 6px 12px; font-size: 13px;">הגדרות בוחן</button>
   </div>
 
-  <div id="time-up-banner" class="time-up-banner">⚠️ תם הזמן! לא ניתן להזיז סיכות נוספות. לחץ הגש כעת.</div>
+  <div id="time-up-banner" class="time-up-banner">⚠️ תם הזמן! הסיכות ננעלו. יש ללחוץ על הגש בוחן.</div>
 
   <div id="map-container">
     <div id="map"></div>
-    <div id="target-bubble" class="target-bubble" style="display:none;">
-      <div style="font-size: 12px; color: #94a3b8;">גרור את הסיכה במפה למיקום:</div>
-      <div id="current-target-name" style="font-size: 18px; font-weight: 800; color: #38bdf8; margin-top: 4px;"></div>
-    </div>
   </div>
 
   <div id="action-panel" class="action-panel">
@@ -127,11 +111,11 @@
         <input type="text" id="cfg-quiz-title" value="בוחן התמצאות גזרת מגדל עוז">
       </div>
       <div class="form-group">
-        <label>טלפון רבש"צ לקבלת תוצאות (לוואטסאפ)</label>
+        <label>טלפון רבש"צ לקבלת תוצאות בווצאפ</label>
         <input type="tel" id="cfg-phone" value="053-7177033">
       </div>
       <div class="form-group">
-        <label>זמן מוקצב (שניות)</label>
+        <label>זמן מוקצב</label>
         <select id="cfg-duration">
           <option value="60">דקה אחת (60 שניות)</option>
           <option value="90">דקה וחצי (90 שניות)</option>
@@ -141,7 +125,7 @@
         </select>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-        <h4 style="font-size: 14px; color: #94a3b8;">רשימת נקודות (לחץ על המפה להוספה)</h4>
+        <h4 style="font-size: 14px; color: #94a3b8;">רשימת נקודות (לחץ במפה להוספה)</h4>
       </div>
       <div id="points-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
     </div>
@@ -153,8 +137,7 @@
   <div class="modal-box">
     <h3 id="guard-modal-title" style="text-align: center; color: #38bdf8;">בוחן התמצאות גזרה</h3>
     <div style="font-size: 14px; line-height: 1.5; color: #cbd5e1; text-align: center;">
-      עליך למקם בדיוק מרבי את כל הנקודות על גבי המפה.
-      <br>הזמן יתחיל ברגע לחיצה על "התחל בוחן".
+      עליך לגרור את הסיכות במפה למיקום המדויק ביותר תוך הזמן המוקצב.
     </div>
     <div class="form-group">
       <label>שם מלא של המאבטח:</label>
@@ -167,9 +150,9 @@
 <!-- מודאל שיתוף רבש"צ -->
 <div id="share-modal" class="modal-overlay">
   <div class="modal-box">
-    <h3 style="text-align: center;">שיתוף קישור בוחן</h3>
-    <div style="font-size: 13px; color: #94a3b8; text-align: center;">הקישור המקוצר מוכן לשליחה מהירה בוואטסאפ:</div>
-    <input type="text" id="share-link-input" readonly style="background:#0f172a; border:1px solid #334155; padding:10px; color:white; border-radius:8px; font-size:13px; text-align:left;" dir="ltr">
+    <h3 style="text-align: center;">קישור לבוחן מוכן!</h3>
+    <div style="font-size: 13px; color: #94a3b8; text-align: center;">הקישור מותאם ישירות לשליחה בוואטסאפ:</div>
+    <input type="text" id="share-link-input" readonly style="background:#0f172a; border:1px solid #334155; padding:10px; color:white; border-radius:8px; font-size:12px; text-align:left;" dir="ltr">
     <button id="btn-send-whatsapp-link" class="btn btn-success">📲 שלח בוואטסאפ למאבטחים</button>
     <button id="btn-copy-link" class="btn btn-secondary">העתק קישור</button>
     <button id="btn-close-share" class="btn btn-secondary">סגור</button>
@@ -179,7 +162,7 @@
 <!-- מודאל תוצאות -->
 <div id="results-modal" class="modal-overlay">
   <div class="modal-box">
-    <h2 style="text-align:center; color:#38bdf8;">הבוחן הוגש בהצלחה!</h2>
+    <h2 style="text-align:center; color:#38bdf8;">הבוחן הוגש!</h2>
     <div id="score-display" style="text-align:center; font-size:42px; font-weight:900; color:#4ade80; margin:10px 0;">0</div>
     <div id="results-breakdown" style="font-size:13px; max-height:180px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;"></div>
     <button id="btn-send-results-wa" class="btn btn-success">📲 שלח תוצאות לרבש"צ בוואטסאפ</button>
@@ -187,7 +170,6 @@
 </div>
 
 <script>
-  // קואורדינטות בסיס - מגדל עוז
   const MIGDAL_OZ = [31.6410, 35.1435];
   let map, isGuardMode = false, quizTimer = null, timeLeft = 120;
   let points = [
@@ -198,27 +180,45 @@
     { id: 5, name: "פילבוקס צפוני", lat: 31.64295, lng: 35.14450 }
   ];
   let guardMarkers = [];
-  let currentTargetIndex = 0;
   let guardAnswers = [];
-  let finalCalculatedScore = 0;
-  let rawReportMessage = "";
 
-  // אתחול מפה
+  // פונקציות קידוד בטוחות לוואטסאפ (מונעות שיבוש תווים)
+  function safeEncode(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function safeDecode(str) {
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4) str += '=';
+    const bin = atob(str);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
   function initMap() {
     map = L.map('map', { zoomControl: false, attributionControl: false }).setView(MIGDAL_OZ, 16);
     L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
 
-    // בדיקה האם יש בוחן ב-URL
-    const params = new URLSearchParams(window.location.search);
-    const testData = params.get('q');
-    if (testData) {
-      loadQuizFromUrl(testData);
+    // בדיקת נתוני בוחן בכתובת (תומך גם ב-?q= וגם ב-#q=)
+    const urlParams = new URLSearchParams(window.location.search);
+    let rawQ = urlParams.get('q');
+    if (!rawQ && window.location.hash) {
+      const match = window.location.hash.match(/[#&]q=([^&]+)/);
+      if (match) rawQ = match[1];
+    }
+
+    if (rawQ) {
+      loadQuizFromData(rawQ);
     } else {
       setupAdminMode();
     }
   }
 
-  // --- מצב רבש"צ (מנהל) ---
+  // --- מצב מנהל ---
   function setupAdminMode() {
     document.getElementById('status-badge').textContent = 'מצב רבש"צ - ניהול';
     renderAdminMarkers();
@@ -229,8 +229,7 @@
 
     map.on('click', (e) => {
       if (isGuardMode || points.length >= 10) return;
-      const newId = Date.now();
-      points.push({ id: newId, name: `נקודה חדשה ${points.length + 1}`, lat: e.latlng.lat, lng: e.latlng.lng });
+      points.push({ id: Date.now(), name: `נקודה ${points.length + 1}`, lat: e.latlng.lat, lng: e.latlng.lng });
       renderAdminMarkers();
       renderPointsList();
     });
@@ -244,12 +243,8 @@
     adminMarkers = [];
 
     points.forEach((p, idx) => {
-      const marker = L.marker([p.lat, p.lng], {
-        draggable: true,
-        title: p.name
-      }).addTo(map);
-
-      marker.bindTooltip(`${idx + 1}. ${p.name}`, { permanent: true, direction: 'top', className: 'marker-label' });
+      const marker = L.marker([p.lat, p.lng], { draggable: true }).addTo(map);
+      marker.bindTooltip(`${idx + 1}. ${p.name}`, { permanent: true, direction: 'top' });
       marker.on('dragend', (ev) => {
         const pos = ev.target.getLatLng();
         p.lat = pos.lat;
@@ -287,39 +282,29 @@
     renderPointsList();
   };
 
-  // יצירת קישור מקוצר
-  async function generateShareableLink() {
-    const payload = {
-      i: Date.now().toString(36), // ID ייחודי לבוחן לחסימת ניסיונות חוזרים
-      t: document.getElementById('cfg-quiz-title').value,
-      p: document.getElementById('cfg-phone').value,
-      d: parseInt(document.getElementById('cfg-duration').value),
-      pts: points.map(p => [p.name, Number(p.lat.toFixed(5)), Number(p.lng.toFixed(5))])
-    };
+  function generateShareableLink() {
+    // מבנה נתונים קומפקטי במיוחד (מערך שטוח חוסך תווים)
+    const payload = [
+      Date.now().toString(36), // מזהה בוחן ייחודי
+      document.getElementById('cfg-quiz-title').value,
+      document.getElementById('cfg-phone').value,
+      parseInt(document.getElementById('cfg-duration').value),
+      points.map(p => [p.name, Number(p.lat.toFixed(5)), Number(p.lng.toFixed(5))])
+    ];
 
-    const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
-    const fullUrl = `${window.location.origin}${window.location.pathname}?q=${encoded}`;
-
-    document.getElementById('share-link-input').value = 'מייצר קישור מקוצר...';
-    document.getElementById('share-modal').style.display = 'flex';
-
-    let finalUrl = fullUrl;
-    try {
-      const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(fullUrl)}`);
-      if (res.ok) {
-        finalUrl = await res.text();
-      }
-    } catch (e) {
-      finalUrl = fullUrl;
-    }
+    const encoded = safeEncode(JSON.stringify(payload));
+    const baseUrl = window.location.origin + window.location.pathname.split('?')[0].split('#')[0];
+    const finalUrl = `${baseUrl}?q=${encoded}`;
 
     document.getElementById('share-link-input').value = finalUrl;
+    document.getElementById('share-modal').style.display = 'flex';
+
     document.getElementById('btn-copy-link').onclick = () => {
       navigator.clipboard.writeText(finalUrl);
       alert('הקישור הועתק ללוח!');
     };
 
-    const waText = `🛡️ *${payload.t}*\nשלום, לפניך בוחן התמצאות גזרה (${payload.pts.length} נקודות, זמן: ${Math.floor(payload.d / 60)} דק').\n\n🔗 קישור לכניסה לבוחן:\n${finalUrl}\n\nבסיום יש להגיש את הבוחן ולשלוח את התוצאות. בהצלחה!`;
+    const waText = `🛡️ *${payload[1]}*\nשלום, לפניך בוחן התמצאות גזרה (${payload[4].length} נקודות, זמן: ${Math.floor(payload[3]/60)} דק').\n\n🔗 קישור ישיר לבוחן:\n${finalUrl}\n\nבסיום יש להגיש את הבוחן ולשלוח את התוצאות. בהצלחה!`;
     document.getElementById('btn-send-whatsapp-link').onclick = () => {
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`, '_blank');
     };
@@ -329,24 +314,38 @@
 
   // --- מצב מאבטח ---
   let quizData = null;
-  function loadQuizFromUrl(encoded) {
+  function loadQuizFromData(rawString) {
     try {
-      quizData = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(encoded)))));
+      const decoded = safeDecode(decodeURIComponent(rawString));
+      const parsed = JSON.parse(decoded);
+      
+      quizData = {
+        id: parsed[0],
+        title: parsed[1],
+        phone: parsed[2],
+        duration: parsed[3],
+        points: parsed[4]
+      };
+
       isGuardMode = true;
       document.getElementById('status-badge').className = 'badge badge-test';
       document.getElementById('status-badge').textContent = 'מצב מאבטח - בוחן פעיל';
       document.getElementById('btn-toggle-menu').style.display = 'none';
 
-      // בדיקה אם הבוחן כבר הוגש בעבר במכשיר זה
-      const quizLockKey = `quiz_submitted_${quizData.i || quizData.t}`;
-      if (localStorage.getItem(quizLockKey)) {
-        alert('כבר הגשת בוחן זה בעבר ממכשיר זה. לא ניתן לבצע ניסיון נוסף.');
-        document.body.innerHTML = '<div style="display:flex;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:20px;"><h2>⚠️ הבוחן כבר הוגש</h2><p>לא ניתן לבצע ניסיון נוסף לבוחן זה.</p></div>';
+      // בדיקת חסימת ניסיון נוסף
+      const lockKey = `submitted_${quizData.id}`;
+      if (localStorage.getItem(lockKey)) {
+        document.body.innerHTML = `
+          <div style="display:flex;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:24px;">
+            <h2 style="color:#ef4444;">⚠️ הבוחן כבר הוגש</h2>
+            <p style="color:#94a3b8;">הבוחן הוגש ממכשיר זה ולא ניתן לבצע ניסיון נוסף.</p>
+            <button onclick="localStorage.removeItem('${lockKey}'); location.reload();" style="margin-top:20px; background:#334155; border:none; color:#cbd5e1; padding:8px 14px; border-radius:8px; font-size:12px;">מצב בדיקה לרבש"צ (אפס נעילה)</button>
+          </div>`;
         return;
       }
 
       document.getElementById('guard-modal').style.display = 'flex';
-      document.getElementById('guard-modal-title').textContent = quizData.t;
+      document.getElementById('guard-modal-title').textContent = quizData.title;
 
       document.getElementById('btn-start-guard-quiz').onclick = () => {
         const name = document.getElementById('guard-name-input').value.trim();
@@ -354,17 +353,16 @@
         document.getElementById('guard-modal').style.display = 'none';
         startGuardExam(name);
       };
-    } catch (e) {
-      alert('קישור הבוחן אינו תקין');
+    } catch (err) {
+      alert('קישור הבוחן שגוי או מקוטע.');
     }
   }
 
   function startGuardExam(guardName) {
-    timeLeft = quizData.d || 120;
+    timeLeft = quizData.duration || 120;
     document.getElementById('timer-box').style.display = 'block';
     updateTimerDisplay();
 
-    // שעון עצר
     quizTimer = setInterval(() => {
       timeLeft--;
       updateTimerDisplay();
@@ -374,11 +372,9 @@
       }
     }, 1000);
 
-    // הכנת נקודות
-    points = quizData.pts.map((p, idx) => ({ id: idx + 1, name: p[0], lat: p[1], lng: p[2] }));
+    points = quizData.points.map((p, idx) => ({ id: idx + 1, name: p[0], lat: p[1], lng: p[2] }));
     guardAnswers = points.map(p => ({ id: p.id, name: p.name, lat: MIGDAL_OZ[0], lng: MIGDAL_OZ[1] }));
 
-    // הצגת סיכות המאבטח בגרירה
     renderGuardMarkers();
 
     const mainBtn = document.getElementById('btn-main-action');
@@ -397,15 +393,14 @@
     guardMarkers.forEach(m => map.removeLayer(m));
     guardMarkers = [];
 
-    // פיזור ראשוני קל סביב המרכז כדי שלא ייערמו בדיוק באותה נקודה
     points.forEach((p, idx) => {
       const offsetLat = (Math.random() - 0.5) * 0.002;
       const offsetLng = (Math.random() - 0.5) * 0.002;
-      const initialPos = [MIGDAL_OZ[0] + offsetLat, MIGDAL_OZ[1] + offsetLng];
-      guardAnswers[idx].lat = initialPos[0];
-      guardAnswers[idx].lng = initialPos[1];
+      const startPos = [MIGDAL_OZ[0] + offsetLat, MIGDAL_OZ[1] + offsetLng];
+      guardAnswers[idx].lat = startPos[0];
+      guardAnswers[idx].lng = startPos[1];
 
-      const marker = L.marker(initialPos, { draggable: true }).addTo(map);
+      const marker = L.marker(startPos, { draggable: true }).addTo(map);
       marker.bindTooltip(`${idx + 1}. ${p.name}`, { permanent: true, direction: 'top' });
 
       marker.on('dragend', (ev) => {
@@ -418,38 +413,28 @@
     });
   }
 
-  // תם הזמן - נעילת מפה ואפשרות הגשה בלבד
   function handleTimeUp() {
     document.getElementById('time-up-banner').style.display = 'block';
     document.getElementById('timer-box').textContent = '00:00';
-    // נעל את כל הסיכות
     guardMarkers.forEach(m => m.dragging && m.dragging.disable());
     map.dragging.disable();
-    alert('הזמן תם! הסיכות ננעלו. לחץ על כפתור ההגשה לקבלת הציון.');
+    alert('הזמן תם! הסיכות ננעלו. לחץ על כפתור ההגשה בתחתית.');
   }
 
-  // חישוב מרחק במטרים (Haversine)
   function getDistanceInMeters(lat1, lon1, lat2, lon2) {
     const R = 6371e3;
-    const phi1 = lat1 * Math.PI / 180;
-    const phi2 = lat2 * Math.PI / 180;
-    const deltaPhi = (lat2 - lat1) * Math.PI / 180;
-    const deltaLambda = (lon2 - lon1) * Math.PI / 180;
-
+    const phi1 = lat1 * Math.PI / 180, phi2 = lat2 * Math.PI / 180;
+    const deltaPhi = (lat2 - lat1) * Math.PI / 180, deltaLambda = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-              Math.cos(phi1) * Math.cos(phi2) *
-              Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Math.round(R * c);
+              Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
   }
 
-  // הגשת בוחן
   function submitQuiz(guardName) {
     if (quizTimer) clearInterval(quizTimer);
 
-    // נעילת ניסיון נוסף ב-localStorage
-    const quizLockKey = `quiz_submitted_${quizData.i || quizData.t}`;
-    localStorage.setItem(quizLockKey, 'true');
+    // נעילת ניסיון נוסף
+    localStorage.setItem(`submitted_${quizData.id}`, 'true');
 
     let totalScore = 0;
     let reportRows = [];
@@ -460,33 +445,31 @@
       const userLoc = guardAnswers[idx];
       const dist = getDistanceInMeters(truth.lat, truth.lng, userLoc.lat, userLoc.lng);
 
-      // ניקוד: מעל 200 מטר = 0 נקודות, יחסי עד 0 מטר = 100 נקודות
       let score = 0;
       if (dist <= 200) {
         score = Math.max(0, Math.round(100 - (dist / 200) * 100));
       }
       totalScore += score;
 
-      reportRows.push(`📍 *${truth.name}*: סטייה של ${dist} מטר (ציון: ${score})`);
+      reportRows.push(`📍 *${truth.name}*: סטייה ${dist} מטר (ציון: ${score})`);
 
       const row = document.createElement('div');
       row.style.cssText = 'background:#0f172a; padding:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;';
       row.innerHTML = `
-        <div><b>${truth.name}</b><br><small style="color:#94a3b8;">סטייה: ${dist} מטר</small></div>
+        <div><b>${truth.name}</b><br><small style="color:#94a3b8;">סטייה: ${dist} מ'</small></div>
         <div style="font-weight:bold; color:${score > 70 ? '#4ade80' : score > 40 ? '#facc15' : '#ef4444'}">${score} נק'</div>
       `;
       breakdown.appendChild(row);
     });
 
-    finalCalculatedScore = Math.round(totalScore / points.length);
-    document.getElementById('score-display').textContent = `${finalCalculatedScore}`;
+    const finalScore = Math.round(totalScore / points.length);
+    document.getElementById('score-display').textContent = `${finalScore}`;
     document.getElementById('results-modal').style.display = 'flex';
 
-    // הכנת הודעת הוואטסאפ
-    const phone = quizData.p ? quizData.p.replace(/[^0-9]/g, '').replace(/^0/, '972') : '';
+    const phone = quizData.phone ? quizData.phone.replace(/[^0-9]/g, '').replace(/^0/, '972') : '';
     const message = `📋 *תוצאות בוחן התמצאות גזרה*\n` +
                     `👤 מאבטח: *${guardName}*\n` +
-                    `🎯 ציון סופי: *${finalCalculatedScore} / 100*\n\n` +
+                    `🎯 ציון סופי: *${finalScore} / 100*\n\n` +
                     `פירוט נקודות:\n` +
                     reportRows.join('\n');
 
