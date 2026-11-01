@@ -120,22 +120,22 @@
     <!-- פאנל ניהול צד ימין לרבש"צ (מתקפל) -->
     <aside id="admin-sidebar" class="absolute top-2 right-2 bottom-20 w-[330px] max-w-[94vw] z-20 flex flex-col gap-2 pointer-events-none transition-transform duration-300 translate-x-0">
       
-      <!-- הגדרות בוחן -->
+      <!-- הגדרות בוחן וניקוד -->
       <div class="bg-slate-900/95 border border-slate-700 rounded-xl shadow-2xl overflow-hidden pointer-events-auto backdrop-blur-md">
         <button onclick="toggleAccordion('acc-settings')" class="w-full px-3.5 py-2.5 bg-slate-800/80 flex items-center justify-between text-right font-bold text-xs text-slate-200">
-          <span>⚙️ 1. הגדרות ודיווח תוצאות</span>
+          <span>⚙️ 1. הגדרות, זמן וסטייה מותרת</span>
           <span id="acc-settings-icon" class="text-slate-400">▼</span>
         </button>
-        <div id="acc-settings" class="hidden p-3 space-y-2 text-xs border-t border-slate-800">
+        <div id="acc-settings" class="hidden p-3 space-y-2.5 text-xs border-t border-slate-800">
           <div>
             <label class="block text-slate-400 mb-1">שם הבוחן:</label>
             <input id="cfg-title" type="text" value="בוחן התמצאות גזרת מגדל עוז" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white outline-none">
           </div>
+          <div>
+            <label class="block text-slate-400 mb-1">טלפון רבש"צ (בוואטסאפ):</label>
+            <input id="cfg-phone" type="tel" value="053-7177033" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white outline-none" dir="ltr">
+          </div>
           <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-slate-400 mb-1">טלפון רבש"צ:</label>
-              <input id="cfg-phone" type="tel" value="053-7177033" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white outline-none" dir="ltr">
-            </div>
             <div>
               <label class="block text-slate-400 mb-1">זמן מוקצב:</label>
               <select id="cfg-time" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white outline-none">
@@ -145,6 +145,13 @@
                 <option value="300">5 דקות</option>
               </select>
             </div>
+            <div>
+              <label class="block text-slate-400 mb-1">סטייה מקסימלית (מ'):</label>
+              <input id="cfg-max-dist" type="number" value="200" min="10" max="2000" step="10" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white outline-none" title="מעבר למרחק זה הציון יהיה 0">
+            </div>
+          </div>
+          <div class="text-[10px] text-slate-400">
+            * מעבר למרחק הסטייה שיוגדר – הציון עבור היעד יהיה 0.
           </div>
         </div>
       </div>
@@ -192,7 +199,7 @@
       <p class="text-xs text-slate-300 leading-relaxed text-right">
         • עבור כל יעד, גרור את הסיכה שלו למיקום המדויק על המפה.<br>
         • <span class="text-emerald-400 font-bold">מתחמים וצירים:</span> אם הסיכה שלך ממוקמת בתוך המתחם או על גבי הציר שהוגדר — תקבל 100 נקודות מלאות (0 מטר סטייה)!<br>
-        • חריגה מעל 200 מטר תזכה ב-0 נקודות.
+        • <span class="text-amber-400 font-bold">טווח דיוק:</span> חריגה מעל <span id="guard-max-dist-label" class="font-bold underline text-white">200</span> מטר תזכה ב-0 נקודות.
       </p>
       <div class="text-right">
         <label class="text-xs text-slate-400 font-semibold block mb-1">שם מלא של המאבטח:</label>
@@ -288,7 +295,6 @@
   let activeQuizMeta = null;
   let lastDebriefResult = null;
 
-  // רשימת יעדים התחלתית
   let points = [
     { id: 1, type: 'point', name: "שער ראשי - כניסה", lat: 31.64272, lng: 35.14198 },
     { 
@@ -315,7 +321,6 @@
   let guardAnswers = [];
   let debriefLayers = [];
 
-  // חישוב מרכז גיאומטרי של צורה
   function computeCentroid(coords) {
     if (!coords || coords.length === 0) return { lat: CENTER_LAT, lng: CENTER_LNG };
     let sumLat = 0, sumLng = 0;
@@ -323,7 +328,6 @@
     return { lat: sumLat / coords.length, lng: sumLng / coords.length };
   }
 
-  // אלגוריתמי מרחק במטרים
   function latLngToMeters(lat, lng) {
     const x = (lng - CENTER_LNG) * 111320 * Math.cos(CENTER_LAT * Math.PI / 180);
     const y = (lat - CENTER_LAT) * 110540;
@@ -387,7 +391,6 @@
     return { dist, nearest: { lat: target.lat, lng: target.lng }, inside: false };
   }
 
-  // יצירת אייקון טקטי
   function makeMarkerIcon(num, name, styleClass, showBadge = true) {
     return L.divIcon({
       className: '',
@@ -402,7 +405,6 @@
     });
   }
 
-  // אתחול אפליקציה ומפה
   function initApp() {
     map = L.map('map', { zoomControl: false, attributionControl: false }).setView([CENTER_LAT, CENTER_LNG], 16);
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
@@ -416,12 +418,11 @@
     }
   }
 
-  // ========= מצב רבש"צ (ניהול) =========
+  // ========= מצב רבש"צ =========
   function enterAdminMode() {
     isGuardMode = false;
     renderAdminAll();
 
-    // לחיצה על המפה מוסיפה יעד חדש (או מוסיפה קודקוד אם עורכים צורה כרגע)
     map.on('click', (e) => {
       if (currentlyEditingId) {
         const tgt = points.find(p => p.id === currentlyEditingId);
@@ -437,7 +438,6 @@
         return;
       }
 
-      // הוספת יעד רגיל בלחיצה על המפה
       if (points.length >= 10) { alert('ניתן להגדיר עד 10 יעדים בבוחן.'); return; }
       points.push({
         id: Date.now(),
@@ -450,7 +450,6 @@
     });
   }
 
-  // כפתור מפורש להוספת יעד
   window.addNewTarget = () => {
     if (points.length >= 10) { alert('ניתן להגדיר עד 10 יעדים.'); return; }
     const center = map.getCenter();
@@ -478,7 +477,6 @@
     points.forEach((pt, idx) => {
       let shapeLayer = null;
 
-      // 1. שרטוט הצורה (קו או פוליגון)
       if (pt.type === 'poly' && pt.coords && pt.coords.length >= 3) {
         shapeLayer = L.polygon(pt.coords, { color: '#38bdf8', weight: 3, fillColor: '#38bdf8', fillOpacity: 0.25 }).addTo(map);
         adminMapLayers.push(shapeLayer);
@@ -487,20 +485,17 @@
         adminMapLayers.push(shapeLayer);
       }
 
-      // אם הצורה קיימת אך המרכז לא מחושב - נחשב אוטומטית
       if (pt.coords && pt.coords.length > 0 && pt.type !== 'point') {
         const c = computeCentroid(pt.coords);
         pt.lat = c.lat;
         pt.lng = c.lng;
       }
 
-      // 2. סיכת המספר - צמודה לצורה, וכאשר גוררים אותה - כל הצורה זזה ביחד!
       const marker = L.marker([pt.lat, pt.lng], {
         draggable: true,
         icon: makeMarkerIcon(idx + 1, pt.name, 'pin-admin')
       }).addTo(map);
 
-      // גרירה מסונכרנת בזמן אמת של הצורה יחד עם הסיכה
       let dragStartLatLng = null;
       marker.on('dragstart', (ev) => {
         dragStartLatLng = ev.target.getLatLng();
@@ -533,7 +528,6 @@
 
       adminMapLayers.push(marker);
 
-      // 3. הצגת ידיות קודקודים לעריכה אם היעד נמצא במצב עריכה
       if (currentlyEditingId === pt.id && pt.coords && pt.type !== 'point') {
         pt.coords.forEach((coord, vIdx) => {
           const vMarker = L.marker(coord, {
@@ -558,10 +552,9 @@
 
           vMarker.on('dragend', () => renderAdminAll());
 
-          // מחיקת קודקוד בלחיצה כפולה
           vMarker.on('dblclick', () => {
             if (pt.coords.length <= (pt.type === 'poly' ? 3 : 2)) {
-              alert('לא ניתן למחוק קודקוד נוסף, זו הכמות המינימלית לצורה זו.');
+              alert('לא ניתן למחוק קודקוד נוסף בצורה זו.');
               return;
             }
             pt.coords.splice(vIdx, 1);
@@ -577,7 +570,6 @@
     });
   }
 
-  // רינדור רשימת היעדים בשורה אחת בלבד
   function renderAdminList() {
     document.getElementById('points-count').textContent = points.length;
     const container = document.getElementById('points-list-container');
@@ -619,7 +611,6 @@
     if (pt) {
       pt.type = newType;
       if (newType !== 'point' && (!pt.coords || pt.coords.length === 0)) {
-        // יצירת צורת בסיס סביב הנקודה
         const d = 0.0006;
         if (newType === 'poly') {
           pt.coords = [
@@ -726,6 +717,7 @@
     const title = document.getElementById('cfg-title').value.trim() || 'בוחן התמצאות גזרה';
     const phone = document.getElementById('cfg-phone').value.trim();
     const duration = parseInt(document.getElementById('cfg-time').value);
+    const maxDist = parseInt(document.getElementById('cfg-max-dist').value) || 200;
 
     const serializedTargets = points.map(p => ({
       t: p.type === 'poly' ? 2 : p.type === 'line' ? 1 : 0,
@@ -736,7 +728,8 @@
     }));
 
     const quizId = Date.now().toString(36);
-    const payload = [quizId, title, phone, duration, serializedTargets];
+    // הטמעת הסטייה המקסימלית כפרמטר ב-payload
+    const payload = [quizId, title, phone, duration, maxDist, serializedTargets];
     const encoded = safeEncode(payload);
     const baseUrl = window.location.origin + window.location.pathname;
     const longUrl = `${baseUrl}?q=${encoded}`;
@@ -750,7 +743,7 @@
     document.getElementById('share-url-box').value = shortUrl;
     document.getElementById('shortening-status').textContent = '✅ הקישור מוכן לשליחה!';
 
-    const waMsg = `🛡️ *${title}*\nשלום, לפניך בוחן התמצאות גזרה (${points.length} יעדים, זמן: ${Math.floor(duration/60)} דק').\n\n🔗 *לכניסה ישירה לבוחן:*\n${shortUrl}\n\nבסיום יש להגיש את התוצאות. בהצלחה!`;
+    const waMsg = `🛡️ *${title}*\nשלום, לפניך בוחן התמצאות גזרה (${points.length} יעדים, זמן: ${Math.floor(duration/60)} דק', טווח דיוק: עד ${maxDist} מ').\n\n🔗 *לכניסה ישירה לבוחן:*\n${shortUrl}\n\nבסיום יש להגיש את התוצאות. בהצלחה!`;
     document.getElementById('btn-wa-share-now').onclick = () => {
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(waMsg)}`, '_blank');
     };
@@ -770,12 +763,24 @@
   function enterGuardMode(qParam) {
     try {
       const data = safeDecode(decodeURIComponent(qParam));
+      
+      // תמיכה לאחור בפורמט ללא maxDist
+      let maxDist = 200;
+      let rawTargets = [];
+      if (typeof data[4] === 'number') {
+        maxDist = data[4];
+        rawTargets = data[5] || [];
+      } else {
+        rawTargets = data[4] || [];
+      }
+
       activeQuizMeta = {
         id: data[0],
         title: data[1],
         phone: data[2],
         duration: data[3],
-        pts: data[4].map((item, idx) => ({
+        maxDist: maxDist,
+        pts: rawTargets.map((item, idx) => ({
           id: idx + 1,
           type: item.t === 2 ? 'poly' : item.t === 1 ? 'line' : 'point',
           name: item.n,
@@ -792,6 +797,9 @@
       document.getElementById('guard-footer-btns').classList.remove('hidden');
       document.getElementById('header-title').textContent = activeQuizMeta.title;
       document.getElementById('mode-badge').textContent = 'מצב מאבטח - בוחן פעיל';
+
+      // עדכון טקסט הסטייה במודאל הכניסה
+      document.getElementById('guard-max-dist-label').textContent = activeQuizMeta.maxDist;
 
       // בדיקת חסימת ניסיון חוזר
       const lockKey = `quiz_done_${activeQuizMeta.id}`;
@@ -823,7 +831,6 @@
     points = activeQuizMeta.pts;
     const count = points.length;
 
-    // פיזור ראשוני של הסיכות במעגל קל סביב המרכז
     guardAnswers = points.map((p, idx) => {
       const angle = (idx / count) * 2 * Math.PI;
       return {
@@ -933,7 +940,7 @@
     guardMarkers.forEach(m => m.dragging && m.dragging.disable());
   }
 
-  // הגשת בוחן וחישוב תוצאות
+  // הגשת בוחן וחישוב תוצאות לפי הסטייה המקסימלית שהוגדרה
   window.submitGuardExam = () => {
     if (timerInterval) clearInterval(timerInterval);
     isExamLocked = true;
@@ -941,13 +948,16 @@
     guardMarkers.forEach(m => map.removeLayer(m));
     guardMarkers = [];
 
+    const maxDist = activeQuizMeta.maxDist || 200;
     let sumScores = 0;
     const details = [];
 
     points.forEach((truth, idx) => {
       const ans = guardAnswers[idx];
       const dev = calculateDeviation({ lat: ans.lat, lng: ans.lng }, truth);
-      const score = dev.dist > 200 ? 0 : Math.max(0, Math.round(100 * (1 - dev.dist / 200)));
+      
+      // חישוב ניקוד יחסי לפי הסטייה המקסימלית שנקבעה
+      const score = dev.dist > maxDist ? 0 : Math.max(0, Math.round(100 * (1 - dev.dist / maxDist)));
       sumScores += score;
 
       details.push({
@@ -971,6 +981,7 @@
     lastDebriefResult = {
       guardName: currentGuardName,
       title: activeQuizMeta.title,
+      maxDist: maxDist,
       finalScore,
       details,
       timestamp: new Date().toLocaleString('he-IL')
@@ -1018,7 +1029,7 @@
   function populateResultsModal(res) {
     document.getElementById('res-guard-name-title').textContent = res.guardName;
     document.getElementById('final-score-circle').textContent = res.finalScore;
-    document.getElementById('res-summary-stats').textContent = `${res.details.length} יעדים • ${res.timestamp}`;
+    document.getElementById('res-summary-stats').textContent = `${res.details.length} יעדים • טווח דיוק: עד ${res.maxDist || 200} מ' • ${res.timestamp}`;
 
     const listEl = document.getElementById('results-list');
     listEl.innerHTML = '';
@@ -1043,6 +1054,7 @@
 
     document.getElementById('print-meta').innerHTML = `
       <div><b>מאבטח:</b> ${res.guardName}</div>
+      <div><b>טווח דיוק מוגדר:</b> עד ${res.maxDist || 200} מטר</div>
       <div><b>תאריך:</b> ${res.timestamp}</div>
       <div><b>ציון סופי:</b> ${res.finalScore}/100</div>
     `;
@@ -1092,7 +1104,7 @@
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '15px Rubik, sans-serif';
-    ctx.fillText(`ביטחון מגדל עוז • מאבטח: ${res.guardName}`, 750, 95);
+    ctx.fillText(`ביטחון מגדל עוז • מאבטח: ${res.guardName} • טווח דיוק: עד ${res.maxDist || 200} מ'`, 750, 95);
 
     ctx.fillStyle = '#10b981';
     ctx.font = 'bold 44px monospace';
@@ -1136,7 +1148,7 @@
     ctx.fillStyle = '#64748b';
     ctx.font = '12px Rubik, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`הופק אוטומטית במערכת ביטחון מגדל עוז בתאריך ${res.timestamp}`, 400, 930);
+    ctx.fillText(`הופק במערכת ביטחון מגדל עוז בתאריך ${res.timestamp}`, 400, 930);
 
     return canvas;
   }
@@ -1154,6 +1166,7 @@
     const reportText = `🛡️ *דו"ח תחקיר - ${res.title}*\n` +
                        `👤 מאבטח: *${res.guardName}*\n` +
                        `🎯 ציון סופי: *${res.finalScore} / 100*\n` +
+                       `📏 טווח דיוק מקסימלי: עד ${res.maxDist || 200} מטר\n` +
                        `🕒 שעת ביצוע: ${res.timestamp}\n\n` +
                        `*פירוט סטיות לפי יעדים:*\n` +
                        waLines.join('\n') + `\n\n_מצורפת תמונת תחקיר מבצעית._`;
