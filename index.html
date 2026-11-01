@@ -4,7 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>בוחן התמצאות גזרה - מגדל עוז</title>
-  
+
+  <!-- הגדרות PWA והתקנה כאפליקציה -->
+  <meta name="theme-color" content="#090d16">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ביטחון מגדל עוז">
+
+  <!-- לוגו ואייקון טקטי מובנה (SVG Data-URI) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='120' fill='%23090d16'/%3E%3Cpath d='M256 48 L416 112 V240 C416 352 256 448 256 448 C256 448 96 352 96 240 V112 Z' fill='%231e293b' stroke='%2338bdf8' stroke-width='16'/%3E%3Cpath d='M256 80 L384 132 V236 C384 326 256 404 256 404 C256 404 128 326 128 236 V132 Z' fill='%230f172a' stroke='%232563eb' stroke-width='10'/%3E%3Ccircle cx='256' cy='230' r='54' fill='%2310b981'/%3E%3Cpath d='M235 230 L250 245 L280 215' fill='none' stroke='%23ffffff' stroke-width='12' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ctext x='256' y='325' font-family='sans-serif' font-size='32' font-weight='900' fill='%23f8fafc' text-anchor='middle'%3E%D7%91%D7%99%D7%98%D7%97%D7%95%D7%9F%3C/text%3E%3Ctext x='256' y='360' font-family='sans-serif' font-size='24' font-weight='700' fill='%2338bdf8' text-anchor='middle'%3E%D7%9E%D7%92%D7%93%D7%9C %D7%A2%D7%95%D7%96%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='120' fill='%23090d16'/%3E%3Cpath d='M256 48 L416 112 V240 C416 352 256 448 256 448 C256 448 96 352 96 240 V112 Z' fill='%231e293b' stroke='%2338bdf8' stroke-width='16'/%3E%3Cpath d='M256 80 L384 132 V236 C384 326 256 404 256 404 C256 404 128 326 128 236 V132 Z' fill='%230f172a' stroke='%232563eb' stroke-width='10'/%3E%3Ccircle cx='256' cy='230' r='54' fill='%2310b981'/%3E%3Cpath d='M235 230 L250 245 L280 215' fill='none' stroke='%23ffffff' stroke-width='12' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ctext x='256' y='325' font-family='sans-serif' font-size='32' font-weight='900' fill='%23f8fafc' text-anchor='middle'%3E%D7%91%D7%99%D7%98%D7%97%D7%95%D7%9F%3C/text%3E%3Ctext x='256' y='360' font-family='sans-serif' font-size='24' font-weight='700' fill='%2338bdf8' text-anchor='middle'%3E%D7%9E%D7%92%D7%93%D7%9C %D7%A2%D7%95%D7%96%3C/text%3E%3C/svg%3E">
+
+  <!-- מניפסט אפליקציה מוטמע ישירות (Data URI) להתקנה בכרום -->
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%D7%91%D7%99%D7%98%D7%97%D7%95%D7%9F%20%D7%9E%D7%92%D7%93%D7%9C%20%D7%A2%D7%95%D7%96%20-%20%D7%91%D7%95%D7%97%D7%9F%20%D7%92%D7%96%D7%A8%D7%94%22%2C%22short_name%22%3A%22%D7%91%D7%99%D7%98%D7%97%D7%95%D7%9F%20%D7%9E%D7%92%D7%93%D7%9C%20%D7%A2%D7%95%D7%96%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23090d16%22%2C%22theme_color%22%3A%22%23090d16%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20512%20512'%253E%253Crect%20width%3D'512'%20height%3D'512'%20rx%3D'120'%20fill%3D'%2523090d16'%2F%253E%253Cpath%20d%3D'M256%2048%20L416%20112%20V240%20C416%20352%20256%20448%20256%20448%20C256%20448%2096%20352%2096%20240%20V112%20Z'%20fill%3D'%25231e293b'%20stroke%3D'%252338bdf8'%20stroke-width%3D'16'%2F%253E%253Cpath%20d%3D'M256%2080%20L384%20132%20V236%20C384%20326%20256%20404%20256%20404%20C256%20404%20128%20326%20128%20236%20V132%20Z'%20fill%3D'%25230f172a'%20stroke%3D'%25232563eb'%20stroke-width%3D'10'%2F%253E%253Ccircle%20cx%3D'256'%20cy%3D'230'%20r%3D'54'%20fill%3D'%252310b981'%2F%253E%253Cpath%20d%3D'M235%20230%20L250%20245%20L280%20215'%20fill%3D'none'%20stroke%3D'%2523ffffff'%20stroke-width%3D'12'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%2F%253E%253Ctext%20x%3D'256'%20y%3D'325'%20font-family%3D'sans-serif'%20font-size%3D'32'%20font-weight%3D'900'%20fill%3D'%2523f8fafc'%20text-anchor%3D'middle'%253E%25D7%2591%25D7%2599%25D7%2598%25D7%2597%25D7%2595%25D7%259F%253C%2Ftext%253E%253Ctext%20x%3D'256'%20y%3D'360'%20font-family%3D'sans-serif'%20font-size%3D'24'%20font-weight%3D'700'%20fill%3D'%252338bdf8'%20text-anchor%3D'middle'%253E%25D7%259E%25D7%2592%25D7%2593%25D7%259C%20%25D7%25A2%25D7%2595%25D7%2596%253C%2Ftext%253E%253C%2Fsvg%3E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -67,7 +81,14 @@
   <!-- סרגל עליון טקטי -->
   <header class="bg-slate-900/95 border-b border-slate-800 px-3.5 py-2.5 flex items-center justify-between z-30 shadow-lg shrink-0">
     <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold">🛡️</div>
+      <!-- לוגו אפליקציה טקטי -->
+      <div class="w-8 h-8 rounded-lg overflow-hidden border border-blue-500/40 flex items-center justify-center bg-slate-950 shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-full h-full p-0.5">
+          <path d="M256 48 L416 112 V240 C416 352 256 448 256 448 C256 448 96 352 96 240 V112 Z" fill="#1e293b" stroke="#38bdf8" stroke-width="20"/>
+          <circle cx="256" cy="230" r="60" fill="#10b981"/>
+          <path d="M230 230 L248 248 L285 210" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
       <div>
         <h1 id="header-title" class="text-sm font-bold text-white leading-tight">ביטחון מגדל עוז</h1>
         <div id="mode-badge" class="text-[11px] text-blue-400 font-semibold">מצב רבש"צ - ניהול בוחן</div>
@@ -81,8 +102,12 @@
 
     <!-- כפתורי שליטה לרבש"צ -->
     <div id="admin-top-controls" class="flex items-center gap-1.5">
-      <button onclick="toggleLabels()" class="bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg">🏷️ תוויות</button>
-      <button onclick="toggleSidebar()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">☰ ניהול</button>
+      <!-- כפתור התקנת אפליקציה בכרום (מופיע אוטומטית כשאפשר להתקין) -->
+      <button id="btn-pwa-install" onclick="triggerPwaInstall()" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow animate-pulse">
+        📲 התקן אפליקציה
+      </button>
+      <button onclick="toggleLabels()" class="bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold px-2 py-1.5 rounded-lg">🏷️ תוויות</button>
+      <button onclick="toggleSidebar()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow">☰ ניהול</button>
     </div>
   </header>
 
@@ -163,14 +188,12 @@
           <span class="text-[10px] text-blue-400 font-normal">הקש במפה להוספה</span>
         </div>
         
-        <!-- כפתור הוספת יעד מפורש -->
         <div class="p-2 pb-1 border-b border-slate-800/80">
           <button onclick="addNewTarget()" class="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow">
             <span>➕ הוסף יעד חדש</span>
           </button>
         </div>
 
-        <!-- רשימת יעדים בשורה אחת בלבד -->
         <div class="p-2 overflow-y-auto space-y-1.5 flex-1" id="points-list-container"></div>
       </div>
 
@@ -294,6 +317,7 @@
   let currentGuardName = '';
   let activeQuizMeta = null;
   let lastDebriefResult = null;
+  let deferredPwaPrompt = null;
 
   let points = [
     { id: 1, type: 'point', name: "שער ראשי - כניסה", lat: 31.64272, lng: 35.14198 },
@@ -320,6 +344,25 @@
   let guardMarkers = [];
   let guardAnswers = [];
   let debriefLayers = [];
+
+  // זיהוי אפשרות התקנת אפליקציה בכרום
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPwaPrompt = e;
+    const btn = document.getElementById('btn-pwa-install');
+    if (btn) btn.classList.remove('hidden');
+  });
+
+  window.triggerPwaInstall = async () => {
+    if (deferredPwaPrompt) {
+      deferredPwaPrompt.prompt();
+      const choice = await deferredPwaPrompt.userChoice;
+      if (choice.outcome === 'accepted') {
+        document.getElementById('btn-pwa-install').classList.add('hidden');
+      }
+      deferredPwaPrompt = null;
+    }
+  };
 
   function computeCentroid(coords) {
     if (!coords || coords.length === 0) return { lat: CENTER_LAT, lng: CENTER_LNG };
@@ -418,7 +461,6 @@
     }
   }
 
-  // ========= מצב רבש"צ =========
   function enterAdminMode() {
     isGuardMode = false;
     renderAdminAll();
@@ -679,7 +721,6 @@
     el.classList.toggle('hidden');
   };
 
-  // קידוד URL-Safe
   function safeEncode(data) {
     const json = JSON.stringify(data);
     const bytes = new TextEncoder().encode(json);
@@ -728,7 +769,6 @@
     }));
 
     const quizId = Date.now().toString(36);
-    // הטמעת הסטייה המקסימלית כפרמטר ב-payload
     const payload = [quizId, title, phone, duration, maxDist, serializedTargets];
     const encoded = safeEncode(payload);
     const baseUrl = window.location.origin + window.location.pathname;
@@ -759,12 +799,11 @@
     alert('הקישור הועתק ללוח!');
   };
 
-  // ========= מצב מאבטח (נבחן) =========
+  // ========= מצב מאבטח =========
   function enterGuardMode(qParam) {
     try {
       const data = safeDecode(decodeURIComponent(qParam));
       
-      // תמיכה לאחור בפורמט ללא maxDist
       let maxDist = 200;
       let rawTargets = [];
       if (typeof data[4] === 'number') {
@@ -798,10 +837,8 @@
       document.getElementById('header-title').textContent = activeQuizMeta.title;
       document.getElementById('mode-badge').textContent = 'מצב מאבטח - בוחן פעיל';
 
-      // עדכון טקסט הסטייה במודאל הכניסה
       document.getElementById('guard-max-dist-label').textContent = activeQuizMeta.maxDist;
 
-      // בדיקת חסימת ניסיון חוזר
       const lockKey = `quiz_done_${activeQuizMeta.id}`;
       const savedRes = localStorage.getItem(lockKey);
       if (savedRes) {
@@ -940,7 +977,6 @@
     guardMarkers.forEach(m => m.dragging && m.dragging.disable());
   }
 
-  // הגשת בוחן וחישוב תוצאות לפי הסטייה המקסימלית שהוגדרה
   window.submitGuardExam = () => {
     if (timerInterval) clearInterval(timerInterval);
     isExamLocked = true;
@@ -956,7 +992,6 @@
       const ans = guardAnswers[idx];
       const dev = calculateDeviation({ lat: ans.lat, lng: ans.lng }, truth);
       
-      // חישוב ניקוד יחסי לפי הסטייה המקסימלית שנקבעה
       const score = dev.dist > maxDist ? 0 : Math.max(0, Math.round(100 * (1 - dev.dist / maxDist)));
       sumScores += score;
 
