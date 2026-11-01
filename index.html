@@ -4,81 +4,61 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>בוחן התמצאות גזרה - מגדל עוז</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    * { box-sizing: border-box; font-family: 'Rubik', sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
+    * { box-sizing: border-box; font-family: 'Rubik', sans-serif; -webkit-tap-highlight-color: transparent; }
     html, body { width: 100%; height: 100%; height: 100dvh; margin: 0; padding: 0; overflow: hidden; background: #090d16; color: #f8fafc; }
     
-    /* בידוד מוחלט של המפה מ-RTL כדי למנוע בריחת תוויות וסיכות */
     #map { width: 100%; height: 100%; direction: ltr !important; z-index: 1; background: #090d16; }
     .leaflet-container { direction: ltr !important; }
 
-    /* עיצוב סיכה טקטית משולבת (ללא בועות לבנות שבורחות הצידה) */
+    /* סיכות טקטיות ללא תלות בקבצים חיצוניים */
     .tactical-marker-wrap {
-      position: relative;
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position: relative; width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
     }
     .tactical-pin {
-      width: 32px;
-      height: 32px;
-      border-radius: 999px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 14px;
-      color: #fff;
-      border: 2.5px solid #fff;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.75);
+      width: 32px; height: 32px; border-radius: 999px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px; color: #fff;
+      border: 2.5px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.8);
       transition: transform 0.15s ease;
     }
     .tactical-pin::after {
-      content: '';
-      position: absolute;
-      bottom: -5px;
-      left: 50%;
-      transform: translateX(-50%);
-      border-left: 5px solid transparent;
-      border-right: 5px solid transparent;
-      border-top: 6px solid #fff;
+      content: ''; position: absolute; bottom: -5px; left: 50%;
+      transform: translateX(-50%); border-left: 5px solid transparent;
+      border-right: 5px solid transparent; border-top: 6px solid #fff;
     }
     .tactical-label {
-      position: absolute;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(15, 23, 42, 0.92);
-      color: #f8fafc;
-      border: 1px solid rgba(255,255,255,0.22);
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      white-space: nowrap;
-      direction: rtl;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.6);
-      pointer-events: none;
+      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.95); color: #f8fafc;
+      border: 1px solid rgba(255,255,255,0.25); padding: 2px 8px;
+      border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap;
+      direction: rtl; box-shadow: 0 2px 8px rgba(0,0,0,0.6); pointer-events: none;
     }
 
     .pin-admin { background: #2563eb; }
     .pin-guard { background: #f59e0b; color: #0f172a; }
-    .pin-active { background: #10b981; transform: scale(1.18); border-color: #fef08a; }
+    .pin-active { background: #10b981; transform: scale(1.15); border-color: #fef08a; }
     .pin-truth { background: #16a34a; }
     .pin-error { background: #ef4444; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printable-report, #printable-report * { visibility: visible; }
+      #printable-report { position: absolute; left: 0; top: 0; width: 100%; color: #000; background: #fff; }
+    }
   </style>
 </head>
 <body class="flex flex-col h-full w-full relative overflow-hidden">
 
   <!-- סרגל עליון טקטי -->
-  <header class="bg-slate-900/95 border-b border-slate-800 px-3 py-2.5 flex items-center justify-between z-30 shadow-lg shrink-0">
+  <header class="bg-slate-900/95 border-b border-slate-800 px-3.5 py-2.5 flex items-center justify-between z-30 shadow-lg shrink-0">
     <div class="flex items-center gap-2">
       <div class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold">🛡️</div>
       <div>
@@ -88,52 +68,61 @@
     </div>
 
     <!-- שעון עצר למאבטח -->
-    <div id="timer-badge" class="hidden bg-red-950/90 border border-red-500/60 text-red-200 px-3 py-1 rounded-full font-mono text-base font-extrabold tracking-wider shadow">
+    <div id="timer-badge" class="hidden bg-red-950/90 border border-red-500/60 text-red-200 px-3 py-1 rounded-full font-mono text-base font-extrabold shadow">
       02:00
     </div>
 
-    <!-- כפתורי ניהול ברבש"צ -->
+    <!-- כפתורי שליטה לרבש"צ -->
     <div id="admin-top-controls" class="flex items-center gap-1.5">
-      <button id="btn-toggle-labels" onclick="toggleLabelsVisibility()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg">
-        🏷️ שמות
-      </button>
-      <button id="btn-toggle-panel" onclick="toggleRightSidebar()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">
-        ☰ תפריט ניהול
-      </button>
+      <button onclick="toggleLabels()" class="bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg">🏷️ תוויות</button>
+      <button onclick="toggleSidebar()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">☰ ניהול</button>
     </div>
   </header>
 
-  <!-- סרגל הנחיה פעיל למאבטח בזמן מבחן -->
-  <div id="guard-hud" class="hidden bg-slate-900/95 border-b border-slate-800 px-3 py-2 z-20 flex flex-col gap-1.5 shrink-0">
+  <!-- הנחיית מאבטח בבוחן -->
+  <div id="guard-hud" class="hidden bg-slate-900/95 border-b border-slate-800 px-3 py-2 z-20 flex flex-col gap-1 shrink-0">
     <div class="flex items-center justify-between text-xs text-slate-400">
-      <span>בחר נקודה או גרור את הסיכה שלה על המפה:</span>
-      <span id="guard-progress-text" class="text-emerald-400 font-bold"></span>
+      <span>בחר יעד או גרור את הסיכה במפה למיקום המדויק:</span>
+      <span id="guard-target-type-hint" class="text-amber-400 font-bold"></span>
     </div>
     <div id="guard-pills" class="flex gap-1.5 overflow-x-auto pb-1"></div>
   </div>
 
-  <!-- התראת נעילה בתום הזמן -->
+  <!-- התראת סיום זמן -->
   <div id="timeup-banner" class="hidden bg-red-600 text-white text-center py-2 px-3 text-xs font-extrabold z-30 shadow-md">
-    ⏱️ הזמן נגמר! המפה ננעלה לשינויים. לחץ למטה על "הגש בוחן ושלח תוצאות".
+    ⏱️ תם הזמן! הסיכות ננעלו. לחץ למטה על "הגש בוחן" לצפייה בסטיות ובציון.
   </div>
 
-  <!-- אזור המפה המרכזי -->
+  <!-- מפה ראשית -->
   <main class="flex-1 relative w-full h-full overflow-hidden">
     <div id="map"></div>
 
-    <!-- פאנל ניהול צד ימין (מתקפל בלחיצה עם 2 אקורדיונים) -->
-    <aside id="admin-sidebar" class="absolute top-2 right-2 bottom-20 w-[320px] max-w-[92vw] z-20 flex flex-col gap-2 pointer-events-none transition-transform duration-300 translate-x-0">
+    <!-- סרגל צף למאבטח בזמן צפייה בתחקיר המפה (מאפשר לחזור לדו"ח ולשלוח שוב!) -->
+    <div id="debrief-floating-bar" class="hidden absolute bottom-4 left-4 right-4 z-40 max-w-md mx-auto">
+      <button onclick="reopenResultsModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white font-black py-3.5 px-4 rounded-xl shadow-2xl flex items-center justify-center gap-2 border border-emerald-400/50">
+        <span>📋 פתח דו"ח ושליחה בוואטסאפ</span>
+      </button>
+    </div>
+
+    <!-- הודעת מצב שרטוט לרבש"צ -->
+    <div id="drawing-hint-bar" class="hidden absolute top-3 left-4 right-4 z-20 bg-amber-500 text-slate-950 font-bold text-xs p-2.5 rounded-xl shadow-xl flex items-center justify-between">
+      <span id="drawing-hint-text">הקש על המפה להוספת קודקודים</span>
+      <button onclick="finishActiveDrawing()" class="bg-slate-950 text-white px-3 py-1 rounded-lg text-xs font-black">סיום שרטוט ✓</button>
+    </div>
+
+    <!-- פאנל ניהול צד ימין לרבש"צ -->
+    <aside id="admin-sidebar" class="absolute top-2 right-2 bottom-20 w-[330px] max-w-[94vw] z-20 flex flex-col gap-2 pointer-events-none transition-transform duration-300 translate-x-0">
       
-      <!-- אקורדיון 1: הגדרות בוחן -->
-      <div class="bg-slate-900/95 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden pointer-events-auto backdrop-blur-md">
+      <!-- הגדרות בוחן -->
+      <div class="bg-slate-900/95 border border-slate-700 rounded-xl shadow-2xl overflow-hidden pointer-events-auto backdrop-blur-md">
         <button onclick="toggleAccordion('acc-settings')" class="w-full px-3.5 py-2.5 bg-slate-800/80 flex items-center justify-between text-right font-bold text-xs text-slate-200">
-          <span>⚙️ 1. הגדרות בוחן ודיווח</span>
+          <span>⚙️ 1. הגדרות ודיווח תוצאות</span>
           <span id="acc-settings-icon" class="text-slate-400">▼</span>
         </button>
-        <div id="acc-settings" class="hidden p-3 space-y-2.5 text-xs border-t border-slate-800">
+        <div id="acc-settings" class="hidden p-3 space-y-2 text-xs border-t border-slate-800">
           <div>
             <label class="block text-slate-400 mb-1">שם הבוחן:</label>
-            <input id="cfg-title" type="text" value="בוחן התמצאות גזרת מגדל עוז" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white outline-none focus:border-blue-500">
+            <input id="cfg-title" type="text" value="בוחן התמצאות גזרת מגדל עוז" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white outline-none">
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div>
@@ -144,107 +133,138 @@
               <label class="block text-slate-400 mb-1">זמן מוקצב:</label>
               <select id="cfg-time" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white outline-none">
                 <option value="60">60 שניות</option>
-                <option value="90">90 שניות</option>
                 <option value="120" selected>2 דקות</option>
                 <option value="180">3 דקות</option>
                 <option value="300">5 דקות</option>
               </select>
             </div>
           </div>
-          <div class="flex items-center justify-between pt-1">
-            <span class="text-slate-300">לוויין נקי (ללא שמות של גוגל):</span>
-            <input id="cfg-clean-sat" type="checkbox" checked onchange="updateSatelliteLayer()" class="w-4 h-4 accent-blue-600">
-          </div>
         </div>
       </div>
 
-      <!-- אקורדיון 2: ניהול נקודות ברשימה -->
-      <div class="bg-slate-900/95 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden pointer-events-auto backdrop-blur-md flex flex-col max-h-[55vh]">
-        <button onclick="toggleAccordion('acc-points')" class="w-full px-3.5 py-2.5 bg-slate-800/80 flex items-center justify-between text-right font-bold text-xs text-slate-200 shrink-0">
-          <span>📍 2. רשימת נקודות בבוחן (<span id="points-count">5</span>/10)</span>
-          <span id="acc-points-icon" class="text-slate-400">▲</span>
-        </button>
-        <div id="acc-points" class="p-2.5 overflow-y-auto space-y-1.5 flex-1 border-t border-slate-800">
-          <div class="text-[11px] text-slate-400 mb-1">לחץ על המפה להוספת נקודה או גרור סיכה קיימת:</div>
-          <div id="points-list-container" class="space-y-1.5"></div>
+      <!-- ניהול יעדים (נקודה / קו / מתחם) -->
+      <div class="bg-slate-900/95 border border-slate-700 rounded-xl shadow-2xl overflow-hidden pointer-events-auto backdrop-blur-md flex flex-col max-h-[58vh]">
+        <div class="px-3.5 py-2.5 bg-slate-800/80 flex items-center justify-between text-xs font-bold text-slate-200 shrink-0">
+          <span>📍 2. יעדים בבוחן (<span id="points-count">5</span>/10)</span>
+          <span class="text-[11px] text-blue-400">נקודות / צירים / מתחמים</span>
         </div>
+        <div class="p-2.5 overflow-y-auto space-y-2 flex-1 border-t border-slate-800" id="points-list-container"></div>
       </div>
 
     </aside>
   </main>
 
-  <!-- סרגל פעולה תחתון קבוע וברור -->
+  <!-- סרגל פעולה תחתון קבוע -->
   <footer id="bottom-bar" class="bg-slate-900/95 border-t border-slate-800 p-3 z-30 shrink-0">
-    <div id="admin-footer-btns" class="flex gap-2 max-w-lg mx-auto">
-      <button onclick="openShareModal()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl shadow-lg text-sm flex items-center justify-center gap-2">
-        <span>📲 שלח בוחן בוואטסאפ למאבטחים</span>
+    <div id="admin-footer-btns" class="max-w-md mx-auto">
+      <button onclick="openShareModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg text-sm flex items-center justify-center gap-2">
+        <span>📲 שתף בוחן בוואטסאפ למאבטחים</span>
       </button>
     </div>
-    <div id="guard-footer-btns" class="hidden max-w-lg mx-auto">
-      <button id="btn-submit-exam" onclick="submitGuardExam()" class="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white font-extrabold py-3.5 px-4 rounded-xl shadow-lg text-base">
-        ✅ הגש בוחן ושלח תוצאות בוואטסאפ
+    <div id="guard-footer-btns" class="hidden max-w-md mx-auto">
+      <button id="btn-submit-exam" onclick="submitGuardExam()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3.5 px-4 rounded-xl shadow-lg text-base">
+        ✅ הגש בוחן ובדוק תוצאות
       </button>
     </div>
   </footer>
 
-  <!-- מודאל כניסת מאבטח -->
-  <div id="modal-guard-start" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-sm shadow-2xl space-y-4 text-center">
+  <!-- מודאל פתיחת בוחן למאבטח -->
+  <div id="modal-guard-start" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-sm shadow-2xl space-y-3.5 text-center">
       <div class="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center mx-auto text-2xl">🎯</div>
-      <h2 id="start-modal-title" class="text-lg font-extrabold text-white">בוחן התמצאות גזרה</h2>
-      <p class="text-xs text-slate-300 leading-relaxed">
-        מקם את כל הנקודות על גבי מפת הלוויין בדיוק מרבי.<br>
-        <span class="text-amber-400 font-bold">שים לב:</span> ניתן לגרור כל סיכה או לבחור נקודה בסרגל העליון וללחוץ על המפה. חריגה מעל 200 מטר מזכה ב-0 נקודות.
+      <h2 id="start-modal-title" class="text-lg font-black text-white">בוחן התמצאות גזרה</h2>
+      <p class="text-xs text-slate-300 leading-relaxed text-right">
+        • עבור כל יעד, גרור את הסיכה שלו למיקום המדויק על המפה.<br>
+        • <span class="text-emerald-400 font-bold">מתחמים וצירים:</span> אם הסיכה שלך ממוקמת בתוך המתחם או על גבי הציר שהוגדר — תקבל 100 נקודות מלאות (0 מטר סטייה)!<br>
+        • חריגה מעל 200 מטר תזכה ב-0 נקודות.
       </p>
       <div class="text-right">
         <label class="text-xs text-slate-400 font-semibold block mb-1">שם מלא של המאבטח:</label>
-        <input id="input-guard-name" type="text" placeholder="הכנס שם פרטי ומשפחה..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-blue-500">
+        <input id="input-guard-name" type="text" placeholder="הכנס שם מלא..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-blue-500">
       </div>
-      <button onclick="beginGuardTest()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-xl text-sm shadow-lg">
-        התחל בוחן עכשיו
+      <button onclick="beginGuardTest()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 rounded-xl text-sm shadow-lg">
+        התחל בוחן כעת
       </button>
     </div>
   </div>
 
-  <!-- מודאל שיתוף וקיצור קישור לרבש"צ -->
-  <div id="modal-share" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-sm shadow-2xl space-y-3.5">
-      <div class="flex justify-between items-center">
-        <h3 class="font-extrabold text-base text-white">שיתוף בוחן למאבטחים</h3>
-        <button onclick="closeShareModal()" class="text-slate-400 text-xl font-bold">&times;</button>
-      </div>
-      <p id="shortening-status" class="text-xs text-emerald-400 font-semibold">⏳ מייצר קישור מקוצר אוטומטי...</p>
+  <!-- מודאל שיתוף קישור לרבש"צ -->
+  <div id="modal-share" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-sm shadow-2xl space-y-3 text-center">
+      <h3 class="font-extrabold text-base text-white text-right">שיתוף בוחן למאבטחים</h3>
+      <p id="shortening-status" class="text-xs text-emerald-400 font-semibold text-right">⏳ מייצר קישור מקוצר...</p>
       <input id="share-url-box" type="text" readonly dir="ltr" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none">
-      <button id="btn-wa-share-now" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm shadow">
-        📲 שלח עכשיו בוואטסאפ
-      </button>
-      <button onclick="copyShareUrl()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl text-xs">
-        📋 העתק קישור
-      </button>
+      <button id="btn-wa-share-now" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-sm shadow">📲 שלח בוואטסאפ</button>
+      <button onclick="copyShareUrl()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl text-xs">📋 העתק קישור</button>
+      <button onclick="closeShareModal()" class="w-full bg-slate-900 border border-slate-700 text-slate-400 py-2 rounded-xl text-xs">סגור</button>
     </div>
   </div>
 
-  <!-- מודאל תוצאות סופי (ללא אפשרות ניסיון נוסף!) -->
-  <div id="modal-results" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-sm shadow-2xl space-y-3.5 text-center">
-      <h2 class="text-lg font-extrabold text-white">סיכום תוצאות הבוחן</h2>
-      <div id="final-score-circle" class="text-5xl font-black text-emerald-400 my-1">0</div>
-      <div class="text-xs text-slate-400">הבוחן ננעל סופית (לא ניתן לבצע ניסיון חוזר)</div>
-      <div id="results-list" class="max-h-48 overflow-y-auto space-y-1.5 text-right text-xs pr-1"></div>
-      <button id="btn-wa-send-report" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 rounded-xl text-sm shadow-lg">
-        📲 שלח דו"ח תוצאה לרבש"צ בוואטסאפ
-      </button>
-      <button onclick="document.getElementById('modal-results').classList.add('hidden')" class="w-full bg-slate-800 text-slate-300 font-semibold py-2 rounded-xl text-xs">
-        צפה במפת התחקיר (השוואת נקודות)
-      </button>
+  <!-- מודאל תוצאות ותחקיר מבצעי -->
+  <div id="modal-results" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden items-center justify-center p-3">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 w-full max-w-md shadow-2xl space-y-3 text-center max-h-[95vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <h2 class="text-base font-black text-white">סיכום תחקיר בוחן גזרה</h2>
+        <span class="text-xs text-slate-400" id="res-guard-name-title"></span>
+      </div>
+
+      <div class="flex items-center justify-center gap-4 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 shrink-0">
+        <div id="final-score-circle" class="text-5xl font-black text-emerald-400">0</div>
+        <div class="text-right text-xs">
+          <div class="font-bold text-white text-sm">ציון משוקלל סופי</div>
+          <div class="text-slate-400" id="res-summary-stats"></div>
+        </div>
+      </div>
+
+      <!-- פירוט יעדים -->
+      <div id="results-list" class="overflow-y-auto space-y-1.5 text-right text-xs pr-1 flex-1"></div>
+
+      <!-- כפתורי פעולה לשיתוף ולהורדה -->
+      <div class="space-y-2 shrink-0 pt-1">
+        <button id="btn-share-whatsapp-rich" onclick="shareResultsToWhatsAppRich()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-sm shadow-lg flex items-center justify-center gap-2">
+          <span>📲 שלח דו"ח מלא + תמונה לוואטסאפ</span>
+        </button>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="downloadDebriefImage()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1">
+            <span>🖼️ הורד תמונת תחקיר</span>
+          </button>
+          <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1">
+            <span>📄 הדפס / שמור כ-PDF</span>
+          </button>
+        </div>
+        <button onclick="closeResultsModalToMap()" class="w-full bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 font-bold py-2.5 rounded-xl text-xs border border-blue-500/40">
+          🗺️ צפה בקווי הסטייה על המפה
+        </button>
+      </div>
     </div>
+  </div>
+
+  <!-- קנבס נסתר לייצור תמונת תחקיר ויזואלית -->
+  <canvas id="debrief-canvas" width="800" height="960" class="hidden"></canvas>
+
+  <!-- אזור נסתר להדפסת PDF נקייה -->
+  <div id="printable-report" class="hidden p-8 space-y-4 font-sans text-black">
+    <h1 class="text-2xl font-bold text-center border-b pb-2">דו"ח בוחן התמצאות גזרה - ביטחון מגדל עוז</h1>
+    <div id="print-meta" class="flex justify-between text-sm py-2"></div>
+    <table class="w-full text-right border-collapse text-sm">
+      <thead>
+        <tr class="bg-slate-200 border-b">
+          <th class="p-2">#</th>
+          <th class="p-2">שם היעד</th>
+          <th class="p-2">סוג</th>
+          <th class="p-2">סטייה במטרים</th>
+          <th class="p-2">ציון</th>
+        </tr>
+      </thead>
+      <tbody id="print-table-body"></tbody>
+    </table>
   </div>
 
 <script>
   const CENTER_LAT = 31.6410;
   const CENTER_LNG = 35.1435;
 
-  let map, tileLayer;
+  let map;
   let isGuardMode = false;
   let showLabels = true;
   let rightSidebarOpen = true;
@@ -252,46 +272,120 @@
   let isExamLocked = false;
   let timerInterval = null;
   let remainingSeconds = 120;
+  let currentGuardName = '';
+  let activeQuizMeta = null;
+  let lastDebriefResult = null;
 
+  // יעדים מובנים לדוגמה (כולל נקודה, ציר ומתחם!)
   let points = [
-    { id: 1, name: "שער ראשי - כניסה", lat: 31.64272, lng: 35.14198 },
-    { id: 2, name: "חמ\"ל ביטחון ומזכירות", lat: 31.64105, lng: 35.14355 },
-    { id: 3, name: "שער מזרחי / מטעים", lat: 31.64015, lng: 35.14675 },
-    { id: 4, name: "מאגר מים / עמדה דרומית", lat: 31.63835, lng: 35.14390 },
-    { id: 5, name: "פילבוקס צפוני", lat: 31.64295, lng: 35.14450 }
+    { id: 1, type: 'point', name: "שער ראשי - כניסה", lat: 31.64272, lng: 35.14198 },
+    { 
+      id: 2, 
+      type: 'poly', 
+      name: "מתחם חמ\"ל ומזכירות", 
+      lat: 31.64105, 
+      lng: 35.14355,
+      coords: [
+        [31.64140, 35.14320],
+        [31.64145, 35.14410],
+        [31.64070, 35.14415],
+        [31.64065, 35.14325]
+      ]
+    },
+    { id: 3, type: 'point', name: "שער מזרחי / מטעים", lat: 31.64015, lng: 35.14675 },
+    { 
+      id: 4, 
+      type: 'line', 
+      name: "ציר ביטחון דרומי", 
+      lat: 31.63835, 
+      lng: 35.14390,
+      coords: [
+        [31.63820, 35.14150],
+        [31.63835, 35.14390],
+        [31.63890, 35.14620]
+      ]
+    },
+    { id: 5, type: 'point', name: "פילבוקס צפוני", lat: 31.64295, lng: 35.14450 }
   ];
 
-  let adminMarkers = [];
+  let adminLayers = [];
   let guardMarkers = [];
   let guardAnswers = [];
-  let activeQuizMeta = null;
+  let debriefLayers = [];
+  let currentlyDrawingTargetId = null;
 
-  // קידוד URL-Safe קומפקטי
-  function encodePayload(obj) {
-    const bytes = new TextEncoder().encode(JSON.stringify(obj));
-    let bin = "";
-    bytes.forEach(b => bin += String.fromCharCode(b));
-    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  // === אלגוריתמי גיאומטריה ומרחקים במטרים (היטל מקומי מדויק) ===
+  function latLngToMeters(lat, lng) {
+    const x = (lng - CENTER_LNG) * 111320 * Math.cos(CENTER_LAT * Math.PI / 180);
+    const y = (lat - CENTER_LAT) * 110540;
+    return { x, y };
   }
 
-  function decodePayload(str) {
-    str = str.replace(/-/g, '+').replace(/_/g, '/');
-    while (str.length % 4) str += '=';
-    const bin = atob(str);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return JSON.parse(new TextDecoder().decode(bytes));
+  function metersToLatLng(m) {
+    const lat = CENTER_LAT + m.y / 110540;
+    const lng = CENTER_LNG + m.x / (111320 * Math.cos(CENTER_LAT * Math.PI / 180));
+    return { lat, lng };
   }
 
-  // בניית אייקון סיכה ממורכז 100% ללא באג RTL
-  function createPinIcon(num, name, styleClass, forceLabel = null) {
-    const displayLabel = forceLabel !== null ? forceLabel : showLabels;
-    const safeName = name.replace(/"/g, '&quot;');
+  function pointToSegmentDistMeters(p, a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return { dist: Math.hypot(p.x - a.x, p.y - a.y), nearestMeters: a };
+    let t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq));
+    const proj = { x: a.x + t * dx, y: a.y + t * dy };
+    return { dist: Math.hypot(p.x - proj.x, p.y - proj.y), nearestMeters: proj };
+  }
+
+  function pointInPolygonMeters(p, polyM) {
+    let inside = false;
+    for (let i = 0, j = polyM.length - 1; i < polyM.length; j = i++) {
+      const xi = polyM[i].x, yi = polyM[i].y;
+      const xj = polyM[j].x, yj = polyM[j].y;
+      const intersect = ((yi > p.y) !== (yj > p.y)) && (p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function calculateDeviation(guardLatLng, target) {
+    const p = latLngToMeters(guardLatLng.lat, guardLatLng.lng);
+
+    if (target.type === 'poly' && target.coords && target.coords.length >= 3) {
+      const polyM = target.coords.map(c => latLngToMeters(c[0], c[1]));
+      if (pointInPolygonMeters(p, polyM)) {
+        return { dist: 0, nearest: guardLatLng, inside: true };
+      }
+      let minDist = Infinity, nearestM = polyM[0];
+      for (let i = 0, j = polyM.length - 1; i < polyM.length; j = i++) {
+        const res = pointToSegmentDistMeters(p, polyM[j], polyM[i]);
+        if (res.dist < minDist) { minDist = res.dist; nearestM = res.nearestMeters; }
+      }
+      return { dist: Math.round(minDist), nearest: metersToLatLng(nearestM), inside: false };
+    } 
+    
+    if (target.type === 'line' && target.coords && target.coords.length >= 2) {
+      const lineM = target.coords.map(c => latLngToMeters(c[0], c[1]));
+      let minDist = Infinity, nearestM = lineM[0];
+      for (let i = 0; i < lineM.length - 1; i++) {
+        const res = pointToSegmentDistMeters(p, lineM[i], lineM[i+1]);
+        if (res.dist < minDist) { minDist = res.dist; nearestM = res.nearestMeters; }
+      }
+      return { dist: Math.round(minDist), nearest: metersToLatLng(nearestM), inside: false };
+    }
+
+    // נקודה רגילה
+    const tM = latLngToMeters(target.lat, target.lng);
+    const dist = Math.round(Math.hypot(p.x - tM.x, p.y - tM.y));
+    return { dist, nearest: { lat: target.lat, lng: target.lng }, inside: false };
+  }
+
+  // === יצירת סמלי סיכות ייחודיים ללא שגיאות כיווניות ===
+  function makeMarkerIcon(num, name, styleClass, showBadge = true) {
     return L.divIcon({
       className: '',
       html: `
         <div class="tactical-marker-wrap">
-          ${displayLabel ? `<div class="tactical-label">${num}. ${safeName}</div>` : ''}
+          ${(showLabels && showBadge) ? `<div class="tactical-label">${num}. ${name}</div>` : ''}
           <div class="tactical-pin ${styleClass}">${num}</div>
         </div>
       `,
@@ -300,13 +394,13 @@
     });
   }
 
+  // === אתחול האפליקציה ===
   function initApp() {
     map = L.map('map', { zoomControl: false, attributionControl: false }).setView([CENTER_LAT, CENTER_LNG], 16);
-    updateSatelliteLayer();
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
 
     const params = new URLSearchParams(window.location.search);
     const qParam = params.get('q');
-
     if (qParam) {
       enterGuardMode(qParam);
     } else {
@@ -314,41 +408,56 @@
     }
   }
 
-  function updateSatelliteLayer() {
-    if (tileLayer) map.removeLayer(tileLayer);
-    const clean = document.getElementById('cfg-clean-sat') ? document.getElementById('cfg-clean-sat').checked : true;
-    const lyrs = clean ? 's' : 'y';
-    tileLayer = L.tileLayer(`https://mt1.google.com/vt/lyrs=${lyrs}&x={x}&y={y}&z={z}`, { maxZoom: 20 }).addTo(map);
-  }
-
-  // ========= מצב רבש"צ =========
+  // === מצב רבש"צ (ניהול) ===
   function enterAdminMode() {
     isGuardMode = false;
-    renderAdminPins();
+    renderAdminGeometry();
     renderAdminList();
 
     map.on('click', (e) => {
-      if (isGuardMode) return;
-      if (points.length >= 10) { alert('ניתן להגדיר עד 10 נקודות בבוחן.'); return; }
+      if (currentlyDrawingTargetId) {
+        const tgt = points.find(p => p.id === currentlyDrawingTargetId);
+        if (tgt) {
+          if (!tgt.coords) tgt.coords = [];
+          tgt.coords.push([e.latlng.lat, e.latlng.lng]);
+          tgt.lat = e.latlng.lat;
+          tgt.lng = e.latlng.lng;
+          renderAdminGeometry();
+          renderAdminList();
+          document.getElementById('drawing-hint-text').textContent = `קודקודים שנוספו ל-${tgt.name}: ${tgt.coords.length}`;
+        }
+        return;
+      }
+
+      if (points.length >= 10) { alert('ניתן להגדיר עד 10 יעדים בבוחן.'); return; }
       points.push({
         id: Date.now(),
-        name: `נקודה ${points.length + 1}`,
+        type: 'point',
+        name: `יעד חדש ${points.length + 1}`,
         lat: e.latlng.lat,
         lng: e.latlng.lng
       });
-      renderAdminPins();
+      renderAdminGeometry();
       renderAdminList();
     });
   }
 
-  function renderAdminPins() {
-    adminMarkers.forEach(m => map.removeLayer(m));
-    adminMarkers = [];
+  function renderAdminGeometry() {
+    adminLayers.forEach(l => map.removeLayer(l));
+    adminLayers = [];
 
     points.forEach((pt, idx) => {
+      if (pt.type === 'poly' && pt.coords && pt.coords.length >= 3) {
+        const poly = L.polygon(pt.coords, { color: '#38bdf8', weight: 3, fillColor: '#38bdf8', fillOpacity: 0.25 }).addTo(map);
+        adminLayers.push(poly);
+      } else if (pt.type === 'line' && pt.coords && pt.coords.length >= 2) {
+        const line = L.polyline(pt.coords, { color: '#fbbf24', weight: 4 }).addTo(map);
+        adminLayers.push(line);
+      }
+
       const marker = L.marker([pt.lat, pt.lng], {
         draggable: true,
-        icon: createPinIcon(idx + 1, pt.name, 'pin-admin')
+        icon: makeMarkerIcon(idx + 1, `${pt.name} (${pt.type === 'poly' ? 'מתחם' : pt.type === 'line' ? 'ציר' : 'נקודה'})`, 'pin-admin')
       }).addTo(map);
 
       marker.on('dragend', (ev) => {
@@ -356,7 +465,7 @@
         pt.lat = pos.lat;
         pt.lng = pos.lng;
       });
-      adminMarkers.push(marker);
+      adminLayers.push(marker);
     });
   }
 
@@ -366,150 +475,189 @@
     container.innerHTML = '';
 
     points.forEach((pt, idx) => {
-      const row = document.createElement('div');
-      row.className = 'flex items-center gap-1.5 bg-slate-950/90 border border-slate-800 rounded-lg px-2 py-1.5';
-      row.innerHTML = `
-        <span class="w-5 h-5 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center shrink-0">${idx + 1}</span>
-        <input type="text" value="${pt.name.replace(/"/g, '&quot;')}" oninput="updatePtName(${pt.id}, this.value)" class="bg-transparent text-xs text-white w-full outline-none border-b border-transparent focus:border-blue-500 px-1">
-        <button onclick="focusPoint(${pt.lat}, ${pt.lng})" class="text-slate-400 hover:text-blue-400 text-xs px-1" title="מרכז מפה">🎯</button>
-        <button onclick="removePt(${pt.id})" class="text-red-400 hover:text-red-300 text-xs px-1" title="מחק">🗑️</button>
+      const isDrawingThis = currentlyDrawingTargetId === pt.id;
+      const card = document.createElement('div');
+      card.className = `p-2 rounded-xl border text-xs space-y-1.5 ${isDrawingThis ? 'bg-amber-950/60 border-amber-500' : 'bg-slate-950/90 border-slate-800'}`;
+      card.innerHTML = `
+        <div class="flex items-center gap-1.5">
+          <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[11px]">${idx + 1}</span>
+          <input type="text" value="${pt.name.replace(/"/g, '&quot;')}" oninput="updateTargetName(${pt.id}, this.value)" class="bg-transparent text-white w-full outline-none border-b border-transparent focus:border-blue-500 px-1 font-semibold">
+          <button onclick="removeTarget(${pt.id})" class="text-red-400 hover:text-red-300 px-1" title="מחק">🗑️</button>
+        </div>
+        <div class="flex items-center justify-between pt-1">
+          <select onchange="changeTargetType(${pt.id}, this.value)" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 text-[11px] outline-none">
+            <option value="point" ${pt.type==='point'?'selected':''}>📍 נקודה</option>
+            <option value="line" ${pt.type==='line'?'selected':''}>〰️ ציר (קו)</option>
+            <option value="poly" ${pt.type==='poly'?'selected':''}>⬡ מתחם (שטח)</option>
+          </select>
+          ${pt.type !== 'point' ? `
+            <button onclick="startDrawingTarget(${pt.id})" class="text-[11px] px-2 py-1 rounded font-bold ${isDrawingThis ? 'bg-amber-500 text-black' : 'bg-slate-800 text-amber-300 border border-slate-700'}">
+              ${isDrawingThis ? 'סיום שרטוט ✓' : '✏️ שרטט במפה'}
+            </button>
+          ` : ''}
+        </div>
       `;
-      container.appendChild(row);
+      container.appendChild(card);
     });
   }
 
-  window.updatePtName = (id, val) => {
-    const pt = points.find(x => x.id === id);
+  window.updateTargetName = (id, val) => {
+    const pt = points.find(p => p.id === id);
+    if (pt) { pt.name = val; renderAdminGeometry(); }
+  };
+
+  window.changeTargetType = (id, newType) => {
+    const pt = points.find(p => p.id === id);
     if (pt) {
-      pt.name = val;
-      renderAdminPins();
+      pt.type = newType;
+      if (newType !== 'point' && (!pt.coords || pt.coords.length === 0)) {
+        pt.coords = [[pt.lat, pt.lng]];
+      }
+      renderAdminGeometry();
+      renderAdminList();
     }
   };
 
-  window.focusPoint = (lat, lng) => map.panTo([lat, lng]);
-
-  window.removePt = (id) => {
-    if (points.length <= 3) { alert('חובה להשאיר לפחות 3 נקודות בבוחן.'); return; }
-    points = points.filter(x => x.id !== id);
-    renderAdminPins();
+  window.startDrawingTarget = (id) => {
+    if (currentlyDrawingTargetId === id) {
+      finishActiveDrawing();
+      return;
+    }
+    currentlyDrawingTargetId = id;
+    const tgt = points.find(p => p.id === id);
+    if (tgt) tgt.coords = []; // אתחול קודקודים לשרטוט חדש
+    document.getElementById('drawing-hint-bar').classList.remove('hidden');
+    document.getElementById('drawing-hint-text').textContent = `לחץ על המפה להוספת קודקודים עבור: ${tgt.name}`;
     renderAdminList();
   };
 
-  window.toggleLabelsVisibility = () => {
-    showLabels = !showLabels;
-    if (isGuardMode) renderGuardPins();
-    else renderAdminPins();
+  window.finishActiveDrawing = () => {
+    currentlyDrawingTargetId = null;
+    document.getElementById('drawing-hint-bar').classList.add('hidden');
+    renderAdminGeometry();
+    renderAdminList();
   };
 
-  window.toggleRightSidebar = () => {
+  window.removeTarget = (id) => {
+    if (points.length <= 3) { alert('חובה להשאיר לפחות 3 יעדים בבוחן.'); return; }
+    points = points.filter(p => p.id !== id);
+    renderAdminGeometry();
+    renderAdminList();
+  };
+
+  window.toggleLabels = () => {
+    showLabels = !showLabels;
+    if (isGuardMode) renderGuardPins();
+    else renderAdminGeometry();
+  };
+
+  window.toggleSidebar = () => {
     const sb = document.getElementById('admin-sidebar');
     rightSidebarOpen = !rightSidebarOpen;
-    sb.style.transform = rightSidebarOpen ? 'translateX(0)' : 'translateX(110%)';
+    sb.style.transform = rightSidebarOpen ? 'translateX(0)' : 'translateX(115%)';
   };
 
   window.toggleAccordion = (id) => {
     const el = document.getElementById(id);
-    const icon = document.getElementById(id + '-icon');
-    const isHidden = el.classList.contains('hidden');
     el.classList.toggle('hidden');
-    if (icon) icon.textContent = isHidden ? '▲' : '▼';
   };
 
-  // קיצור קישור אוטומטי באמצעות JSONP של is.gd (עוקף חסימות דפדפן)
-  function shortenUrlJsonp(longUrl) {
-    return new Promise((resolve) => {
-      const cbName = 'isgd_cb_' + Math.floor(Math.random() * 1000000);
-      const timer = setTimeout(() => {
-        cleanup();
-        resolve(longUrl);
-      }, 3500);
+  // קידוד URL-Safe
+  function safeEncode(data) {
+    const json = JSON.stringify(data);
+    const bytes = new TextEncoder().encode(json);
+    let bin = "";
+    bytes.forEach(b => bin += String.fromCharCode(b));
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
 
-      function cleanup() {
+  function safeDecode(str) {
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4) str += '=';
+    const bin = atob(str);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+
+  // שיתוף וקיצור קישור
+  function shortenUrl(longUrl) {
+    return new Promise(resolve => {
+      const cb = 'isgd_cb_' + Math.floor(Math.random() * 100000);
+      const timer = setTimeout(() => { delete window[cb]; resolve(longUrl); }, 3500);
+      window[cb] = (data) => {
         clearTimeout(timer);
-        delete window[cbName];
-        const s = document.getElementById(cbName);
-        if (s) s.remove();
-      }
-
-      window[cbName] = (data) => {
-        cleanup();
-        if (data && data.shorturl) resolve(data.shorturl);
-        else resolve(longUrl);
+        delete window[cb];
+        resolve((data && data.shorturl) ? data.shorturl : longUrl);
       };
-
-      const script = document.createElement('script');
-      script.id = cbName;
-      script.src = `https://is.gd/create.php?format=json&callback=${cbName}&url=${encodeURIComponent(longUrl)}`;
-      script.onerror = () => { cleanup(); resolve(longUrl); };
-      document.body.appendChild(script);
+      const s = document.createElement('script');
+      s.src = `https://is.gd/create.php?format=json&callback=${cb}&url=${encodeURIComponent(longUrl)}`;
+      s.onerror = () => { clearTimeout(timer); resolve(longUrl); };
+      document.body.appendChild(s);
     });
   }
 
   window.openShareModal = async () => {
-    const title = document.getElementById('cfg-title').value.trim() || 'בוחן גזרה';
+    const title = document.getElementById('cfg-title').value.trim() || 'בוחן התמצאות גזרה';
     const phone = document.getElementById('cfg-phone').value.trim();
     const duration = parseInt(document.getElementById('cfg-time').value);
-    const cleanSat = document.getElementById('cfg-clean-sat').checked ? 1 : 0;
 
-    // כיווץ קואורדינטות להפרשים קטנים כדי לקצר את המחרוזת
-    const compactPts = points.map(p => [
-      p.name,
-      Math.round((p.lat - CENTER_LAT) * 100000),
-      Math.round((p.lng - CENTER_LNG) * 100000)
-    ]);
+    // כיווץ אופטימלי לנתונים
+    const serializedTargets = points.map(p => ({
+      t: p.type === 'poly' ? 2 : p.type === 'line' ? 1 : 0,
+      n: p.name,
+      lat: Number(p.lat.toFixed(5)),
+      lng: Number(p.lng.toFixed(5)),
+      c: p.coords ? p.coords.map(pt => [Number(pt[0].toFixed(5)), Number(pt[1].toFixed(5))]) : []
+    }));
 
     const quizId = Date.now().toString(36);
-    const payload = [quizId, title, phone, duration, cleanSat, compactPts];
-    const encoded = encodePayload(payload);
+    const payload = [quizId, title, phone, duration, serializedTargets];
+    const encoded = safeEncode(payload);
     const baseUrl = window.location.origin + window.location.pathname;
     const longUrl = `${baseUrl}?q=${encoded}`;
 
-    const modal = document.getElementById('modal-share');
-    const statusEl = document.getElementById('shortening-status');
-    const inputEl = document.getElementById('share-url-box');
+    document.getElementById('modal-share').classList.remove('hidden');
+    document.getElementById('modal-share').classList.add('flex');
+    document.getElementById('shortening-status').textContent = '⏳ מייצר קישור מקוצר...';
+    document.getElementById('share-url-box').value = longUrl;
 
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    statusEl.textContent = '⏳ מייצר קישור קצר לוואטסאפ...';
-    inputEl.value = longUrl;
+    const shortUrl = await shortenUrl(longUrl);
+    document.getElementById('share-url-box').value = shortUrl;
+    document.getElementById('shortening-status').textContent = '✅ הקישור מוכן לשליחה!';
 
-    const shortUrl = await shortenUrlJsonp(longUrl);
-    inputEl.value = shortUrl;
-    statusEl.textContent = shortUrl !== longUrl ? '✅ קישור מקוצר מוכן לשליחה!' : '✅ הקישור מוכן לשליחה!';
-
-    const waMsg = `🛡️ *${title}*\nשלום, מצורף בוחן התמצאות גזרה (${points.length} נקודות, זמן: ${Math.floor(duration/60)} דק').\n\n🔗 *לכניסה לבוחן לחץ כאן:*\n${shortUrl}\n\nבהצלחה!`;
+    const waMsg = `🛡️ *${title}*\nשלום, לפניך בוחן התמצאות גזרה (${points.length} יעדים, זמן: ${Math.floor(duration/60)} דק').\n\n🔗 *לכניסה ישירה לבוחן:*\n${shortUrl}\n\nבסיום יש להגיש את התוצאות. בהצלחה!`;
     document.getElementById('btn-wa-share-now').onclick = () => {
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(waMsg)}`, '_blank');
     };
   };
 
   window.closeShareModal = () => {
-    const modal = document.getElementById('modal-share');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    document.getElementById('modal-share').classList.add('hidden');
+    document.getElementById('modal-share').classList.remove('flex');
   };
 
   window.copyShareUrl = () => {
-    const val = document.getElementById('share-url-box').value;
-    navigator.clipboard.writeText(val);
-    alert('הקישור הועתק!');
+    navigator.clipboard.writeText(document.getElementById('share-url-box').value);
+    alert('הקישור הועתק ללוח!');
   };
 
-  // ========= מצב מאבטח (נבחן) =========
+  // === מצב מאבטח (נבחן) ===
   function enterGuardMode(qParam) {
     try {
-      const data = decodePayload(decodeURIComponent(qParam));
+      const data = safeDecode(decodeURIComponent(qParam));
       activeQuizMeta = {
         id: data[0],
         title: data[1],
         phone: data[2],
         duration: data[3],
-        cleanSat: data[4] === 1,
-        pts: data[5].map((item, idx) => ({
+        pts: data[4].map((item, idx) => ({
           id: idx + 1,
-          name: item[0],
-          lat: CENTER_LAT + (item[1] / 100000),
-          lng: CENTER_LNG + (item[2] / 100000)
+          type: item.t === 2 ? 'poly' : item.t === 1 ? 'line' : 'point',
+          name: item.n,
+          lat: item.lat,
+          lng: item.lng,
+          coords: item.c
         }))
       };
 
@@ -519,54 +667,45 @@
       document.getElementById('admin-footer-btns').classList.add('hidden');
       document.getElementById('guard-footer-btns').classList.remove('hidden');
       document.getElementById('header-title').textContent = activeQuizMeta.title;
-      document.getElementById('mode-badge').textContent = 'מצב מאבטח - בוחן התמצאות';
+      document.getElementById('mode-badge').textContent = 'מצב מאבטח - בוחן פעיל';
 
-      // הגדרת שכבת לוויין לפי בחירת הרבש"צ
-      if (tileLayer) map.removeLayer(tileLayer);
-      const lyrs = activeQuizMeta.cleanSat ? 's' : 'y';
-      tileLayer = L.tileLayer(`https://mt1.google.com/vt/lyrs=${lyrs}&x={x}&y={y}&z={z}`, { maxZoom: 20 }).addTo(map);
-
-      // בדיקה האם הבוחן כבר הוגש במכשיר זה (חסימת ניסיון נוסף!)
-      const lockKey = `migdal_quiz_done_${activeQuizMeta.id}`;
-      const savedResult = localStorage.getItem(lockKey);
-      if (savedResult) {
-        const parsedRes = JSON.parse(savedResult);
-        showLockedSubmittedScreen(parsedRes);
+      // בדיקת חסימת ניסיון חוזר
+      const lockKey = `quiz_done_${activeQuizMeta.id}`;
+      const savedRes = localStorage.getItem(lockKey);
+      if (savedRes) {
+        lastDebriefResult = JSON.parse(savedRes);
+        showSubmittedScreen(lastDebriefResult);
         return;
       }
 
       document.getElementById('start-modal-title').textContent = activeQuizMeta.title;
-      const startModal = document.getElementById('modal-guard-start');
-      startModal.classList.remove('hidden');
-      startModal.classList.add('flex');
+      document.getElementById('modal-guard-start').classList.remove('hidden');
+      document.getElementById('modal-guard-start').classList.add('flex');
 
     } catch (e) {
-      alert('קישור הבוחן אינו תקין או שנקטע.');
+      alert('קישור הבוחן אינו תקין');
     }
   }
 
-  let currentGuardName = '';
   window.beginGuardTest = () => {
-    const nameInput = document.getElementById('input-guard-name').value.trim();
-    if (!nameInput) { alert('יש להזין שם מלא כדי להתחיל בבוחן.'); return; }
-    currentGuardName = nameInput;
+    const name = document.getElementById('input-guard-name').value.trim();
+    if (!name) { alert('יש להזין שם מלא כדי להתחיל.'); return; }
+    currentGuardName = name;
 
-    const startModal = document.getElementById('modal-guard-start');
-    startModal.classList.add('hidden');
-    startModal.classList.remove('flex');
-
+    document.getElementById('modal-guard-start').classList.add('hidden');
     document.getElementById('guard-hud').classList.remove('hidden');
-    const timerBadge = document.getElementById('timer-badge');
-    timerBadge.classList.remove('hidden');
+    document.getElementById('timer-badge').classList.remove('hidden');
 
     points = activeQuizMeta.pts;
-    // מיקום התחלתי במעגל קטן במרכז היישוב
     const count = points.length;
+
+    // פיזור ראשוני של הסיכות במעגל קל סביב המרכז
     guardAnswers = points.map((p, idx) => {
       const angle = (idx / count) * 2 * Math.PI;
       return {
         id: p.id,
         name: p.name,
+        type: p.type,
         lat: CENTER_LAT + Math.sin(angle) * 0.0010,
         lng: CENTER_LNG + Math.cos(angle) * 0.0010,
         touched: false
@@ -574,20 +713,19 @@
     });
 
     activeGuardPointIdx = 0;
-    renderGuardHudPills();
+    renderGuardPills();
     renderGuardPins();
 
-    // לחיצה על המפה מעבירה את הסיכה הנבחרת לנקודת הלחיצה
     map.on('click', (e) => {
       if (isExamLocked) return;
       guardAnswers[activeGuardPointIdx].lat = e.latlng.lat;
       guardAnswers[activeGuardPointIdx].lng = e.latlng.lng;
       guardAnswers[activeGuardPointIdx].touched = true;
       renderGuardPins();
-      renderGuardHudPills();
+      renderGuardPills();
     });
 
-    // הפעלת שעון העצר
+    // שעון עצר
     remainingSeconds = activeQuizMeta.duration || 120;
     updateTimerText();
     timerInterval = setInterval(() => {
@@ -595,7 +733,7 @@
       updateTimerText();
       if (remainingSeconds <= 0) {
         clearInterval(timerInterval);
-        lockExamOnTimeUp();
+        lockExamOnTime();
       }
     }, 1000);
   };
@@ -606,14 +744,18 @@
     document.getElementById('timer-badge').textContent = `${m}:${s}`;
   }
 
-  function renderGuardHudPills() {
-    const pillsContainer = document.getElementById('guard-pills');
-    pillsContainer.innerHTML = '';
+  function renderGuardPills() {
+    const container = document.getElementById('guard-pills');
+    container.innerHTML = '';
+    const current = guardAnswers[activeGuardPointIdx];
+    const typeLabel = current.type === 'poly' ? 'מתחם (פוליגון)' : current.type === 'line' ? 'ציר (קו)' : 'נקודה';
+    document.getElementById('guard-target-type-hint').textContent = `[${typeLabel}]`;
+
     guardAnswers.forEach((ans, idx) => {
-      const isSelected = idx === activeGuardPointIdx;
+      const isSel = idx === activeGuardPointIdx;
       const btn = document.createElement('button');
       btn.className = `px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 border transition-all ${
-        isSelected
+        isSel
           ? 'bg-emerald-600 text-white border-yellow-300 shadow'
           : ans.touched
             ? 'bg-slate-800 text-emerald-400 border-emerald-500/40'
@@ -623,11 +765,11 @@
       btn.onclick = () => {
         if (isExamLocked) return;
         activeGuardPointIdx = idx;
-        renderGuardHudPills();
+        renderGuardPills();
         renderGuardPins();
         map.panTo([ans.lat, ans.lng]);
       };
-      pillsContainer.appendChild(btn);
+      container.appendChild(btn);
     });
   }
 
@@ -636,15 +778,15 @@
     guardMarkers = [];
 
     guardAnswers.forEach((ans, idx) => {
-      const isSelected = idx === activeGuardPointIdx;
+      const isSel = idx === activeGuardPointIdx;
       const marker = L.marker([ans.lat, ans.lng], {
         draggable: !isExamLocked,
-        icon: createPinIcon(idx + 1, ans.name, isSelected ? 'pin-active' : 'pin-guard', true)
+        icon: makeMarkerIcon(idx + 1, ans.name, isSel ? 'pin-active' : 'pin-guard', true)
       }).addTo(map);
 
       marker.on('dragstart', () => {
         activeGuardPointIdx = idx;
-        renderGuardHudPills();
+        renderGuardPills();
       });
 
       marker.on('dragend', (ev) => {
@@ -653,7 +795,7 @@
         ans.lat = pos.lat;
         ans.lng = pos.lng;
         ans.touched = true;
-        renderGuardHudPills();
+        renderGuardPills();
         renderGuardPins();
       });
 
@@ -661,25 +803,14 @@
     });
   }
 
-  // נעילה מוחלטת כשנגמר הזמן - אפשרות להגיש בלבד
-  function lockExamOnTimeUp() {
+  function lockExamOnTime() {
     isExamLocked = true;
     document.getElementById('timer-badge').textContent = '00:00';
     document.getElementById('timeup-banner').classList.remove('hidden');
     guardMarkers.forEach(m => m.dragging && m.dragging.disable());
   }
 
-  // נוסחת Haversine לחישוב מרחק במטרים
-  function calcMeters(lat1, lon1, lat2, lon2) {
-    const R = 6371000;
-    const toRad = d => d * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-  }
-
-  // הגשת הבוחן וחסימת ניסיונות חוזרים
+  // === הגשת בוחן וחישוב תוצאות ===
   window.submitGuardExam = () => {
     if (timerInterval) clearInterval(timerInterval);
     isExamLocked = true;
@@ -692,100 +823,266 @@
 
     points.forEach((truth, idx) => {
       const ans = guardAnswers[idx];
-      const dist = calcMeters(truth.lat, truth.lng, ans.lat, ans.lng);
-      const score = dist > 200 ? 0 : Math.max(0, Math.round(100 * (1 - dist / 200)));
+      const dev = calculateDeviation({ lat: ans.lat, lng: ans.lng }, truth);
+      const score = dev.dist > 200 ? 0 : Math.max(0, Math.round(100 * (1 - dev.dist / 200)));
       sumScores += score;
 
       details.push({
         num: idx + 1,
         name: truth.name,
-        dist,
+        type: truth.type,
+        dist: dev.dist,
         score,
+        inside: dev.inside || false,
         truthLat: truth.lat,
         truthLng: truth.lng,
+        coords: truth.coords || [],
         ansLat: ans.lat,
-        ansLng: ans.lng
+        ansLng: ans.lng,
+        nearestLat: dev.nearest.lat,
+        nearestLng: dev.nearest.lng
       });
     });
 
     const finalScore = Math.round(sumScores / points.length);
-    const resultData = {
+    lastDebriefResult = {
       guardName: currentGuardName,
+      title: activeQuizMeta.title,
       finalScore,
-      details
+      details,
+      timestamp: new Date().toLocaleString('he-IL')
     };
 
-    // שמירה ב-localStorage כך שלא יתאפשר ניסיון נוסף!
-    localStorage.setItem(`migdal_quiz_done_${activeQuizMeta.id}`, JSON.stringify(resultData));
-
-    displayFinalDebrief(resultData);
+    localStorage.setItem(`quiz_done_${activeQuizMeta.id}`, JSON.stringify(lastDebriefResult));
+    showSubmittedScreen(lastDebriefResult);
   };
 
-  function showLockedSubmittedScreen(savedResult) {
-    isExamLocked = true;
-    displayFinalDebrief(savedResult);
-  }
-
-  function displayFinalDebrief(resultData) {
+  function showSubmittedScreen(resultData) {
     document.getElementById('guard-hud').classList.add('hidden');
     document.getElementById('bottom-bar').classList.add('hidden');
     document.getElementById('timeup-banner').classList.add('hidden');
 
+    // שרטוט מפת התחקיר (סימון האמת, קווי הסטייה וסיכות המאבטח)
+    debriefLayers.forEach(l => map.removeLayer(l));
+    debriefLayers = [];
+
+    resultData.details.forEach(item => {
+      // ציור מתחם / ציר אמת
+      if (item.type === 'poly' && item.coords && item.coords.length >= 3) {
+        debriefLayers.push(L.polygon(item.coords, { color: '#10b981', weight: 3, fillColor: '#10b981', fillOpacity: 0.25 }).addTo(map));
+      } else if (item.type === 'line' && item.coords && item.coords.length >= 2) {
+        debriefLayers.push(L.polyline(item.coords, { color: '#10b981', weight: 4 }).addTo(map));
+      } else {
+        debriefLayers.push(L.marker([item.truthLat, item.truthLng], { icon: makeMarkerIcon(item.num, `${item.name} (אמת)`, 'pin-truth', true) }).addTo(map));
+      }
+
+      // סיכת המאבטח
+      const guardPinClass = item.score > 70 ? 'pin-guard' : 'pin-error';
+      debriefLayers.push(L.marker([item.ansLat, item.ansLng], { icon: makeMarkerIcon(item.num, `סימון (${item.dist}מ')`, guardPinClass, true) }).addTo(map));
+
+      // קו מקווקו לנקודת האמת / הקצה הקרוב
+      if (item.dist > 0) {
+        debriefLayers.push(L.polyline([[item.nearestLat, item.nearestLng], [item.ansLat, item.ansLng]], {
+          color: item.score > 70 ? '#4ade80' : item.score > 0 ? '#facc15' : '#ef4444',
+          dashArray: '5, 7',
+          weight: 2.5
+        }).addTo(map));
+      }
+    });
+
+    populateResultsModal(resultData);
+    document.getElementById('modal-results').classList.remove('hidden');
+    document.getElementById('modal-results').classList.add('flex');
+    document.getElementById('debrief-floating-bar').classList.remove('hidden');
+  }
+
+  function populateResultsModal(res) {
+    document.getElementById('res-guard-name-title').textContent = res.guardName;
+    document.getElementById('final-score-circle').textContent = res.finalScore;
+    document.getElementById('res-summary-stats').textContent = `${res.details.length} יעדים נבחנו • ${res.timestamp}`;
+
     const listEl = document.getElementById('results-list');
     listEl.innerHTML = '';
-    const waLines = [];
 
-    resultData.details.forEach((item) => {
-      // ציור סיכת אמת (ירוק) וסיכת מאבטח (כתום/אדום) על המפה
-      L.marker([item.truthLat, item.truthLng], {
-        icon: createPinIcon(item.num, `${item.name} (אמת)`, 'pin-truth', true)
-      }).addTo(map);
-
-      L.marker([item.ansLat, item.ansLng], {
-        icon: createPinIcon(item.num, `סימון (${item.dist}מ')`, item.score > 50 ? 'pin-guard' : 'pin-error', true)
-      }).addTo(map);
-
-      L.polyline([[item.truthLat, item.truthLng], [item.ansLat, item.ansLng]], {
-        color: item.score > 70 ? '#4ade80' : item.score > 0 ? '#facc15' : '#ef4444',
-        dashArray: '5, 7',
-        weight: 2.5
-      }).addTo(map);
-
-      waLines.push(`📍 *${item.num}. ${item.name}*: סטייה ${item.dist} מ' (ציון: ${item.score})`);
-
+    res.details.forEach(item => {
+      const typeStr = item.type === 'poly' ? 'מתחם' : item.type === 'line' ? 'ציר' : 'נקודה';
       const row = document.createElement('div');
-      row.className = 'bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 flex justify-between items-center';
+      row.className = 'bg-slate-950 border border-slate-800 rounded-lg p-2.5 flex justify-between items-center';
       row.innerHTML = `
         <div>
-          <div class="font-bold text-white">${item.num}. ${item.name}</div>
-          <div class="text-[11px] text-slate-400">סטייה מהיעד: ${item.dist} מטרים</div>
+          <div class="font-bold text-white text-xs">${item.num}. ${item.name} <span class="text-[10px] text-slate-400">(${typeStr})</span></div>
+          <div class="text-[11px] text-slate-400">
+            ${item.inside ? '🎯 <b class="text-emerald-400">פגיעה מדויקת בתוך המתחם!</b>' : `סטייה: ${item.dist} מטר`}
+          </div>
         </div>
-        <div class="font-extrabold text-sm ${item.score > 70 ? 'text-emerald-400' : item.score > 0 ? 'text-amber-400' : 'text-red-500'}">
+        <div class="font-black text-sm ${item.score > 70 ? 'text-emerald-400' : item.score > 0 ? 'text-amber-400' : 'text-red-500'}">
           ${item.score} נק'
         </div>
       `;
       listEl.appendChild(row);
     });
 
-    document.getElementById('final-score-circle').textContent = resultData.finalScore;
-    const resModal = document.getElementById('modal-results');
-    resModal.classList.remove('hidden');
-    resModal.classList.add('flex');
-
-    const cleanPhone = (activeQuizMeta.phone || '').replace(/[^0-9]/g, '').replace(/^0/, '972');
-    const reportText = `🛡️ *תוצאות ${activeQuizMeta.title}*\n` +
-                       `👤 שם מאבטח: *${resultData.guardName}*\n` +
-                       `🎯 ציון סופי: *${resultData.finalScore} / 100*\n\n` +
-                       `*פירוט דיוק לפי נקודות:*\n` +
-                       waLines.join('\n');
-
-    document.getElementById('btn-wa-send-report').onclick = () => {
-      const url = cleanPhone
-        ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(reportText)}`
-        : `https://api.whatsapp.com/send?text=${encodeURIComponent(reportText)}`;
-      window.open(url, '_blank');
-    };
+    // הכנה להדפסה
+    document.getElementById('print-meta').innerHTML = `
+      <div><b>מאבטח:</b> ${res.guardName}</div>
+      <div><b>תאריך:</b> ${res.timestamp}</div>
+      <div><b>ציון סופי:</b> ${res.finalScore}/100</div>
+    `;
+    const printTbody = document.getElementById('print-table-body');
+    printTbody.innerHTML = '';
+    res.details.forEach(it => {
+      printTbody.innerHTML += `
+        <tr class="border-b">
+          <td class="p-2">${it.num}</td>
+          <td class="p-2 font-bold">${it.name}</td>
+          <td class="p-2">${it.type === 'poly' ? 'מתחם' : it.type === 'line' ? 'ציר' : 'נקודה'}</td>
+          <td class="p-2">${it.inside ? 'בתוך המתחם (0 מ\')' : it.dist + ' מטר'}</td>
+          <td class="p-2 font-bold">${it.score}</td>
+        </tr>
+      `;
+    });
   }
+
+  // חזרה למפה ופתיחה חוזרת של הדו"ח
+  window.closeResultsModalToMap = () => {
+    document.getElementById('modal-results').classList.add('hidden');
+    document.getElementById('modal-results').classList.remove('flex');
+    document.getElementById('debrief-floating-bar').classList.remove('hidden');
+  };
+
+  window.reopenResultsModal = () => {
+    document.getElementById('modal-results').classList.remove('hidden');
+    document.getElementById('modal-results').classList.add('flex');
+  };
+
+  // יצירת תמונת תחקיר מבצעית בקנבס
+  function renderDebriefToCanvas() {
+    const canvas = document.getElementById('debrief-canvas');
+    const ctx = canvas.getContext('2d');
+    const res = lastDebriefResult;
+
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(0, 0, 800, 960);
+
+    // מסגרת עליונה
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(20, 20, 760, 110);
+    ctx.strokeStyle = '#334155';
+    ctx.strokeRect(20, 20, 760, 110);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 22px Rubik, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('דו"ח תחקיר מבצעי - בוחן התמצאות גזרה', 750, 60);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '15px Rubik, sans-serif';
+    ctx.fillText(`ביטחון מגדל עוז • שם מאבטח: ${res.guardName}`, 750, 95);
+
+    // עיגול ציון
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 44px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${res.finalScore}`, 50, 78);
+    ctx.font = '12px Rubik, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('ציון סופי', 50, 102);
+
+    // טבלת יעדים
+    let y = 170;
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 16px Rubik, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('פירוט יעדים, סטיות וניקוד:', 760, y);
+    y += 20;
+
+    res.details.forEach(item => {
+      ctx.fillStyle = '#111827';
+      ctx.fillRect(20, y, 760, 52);
+      ctx.strokeStyle = '#1e293b';
+      ctx.strokeRect(20, y, 760, 52);
+
+      const typeLabel = item.type === 'poly' ? 'מתחם' : item.type === 'line' ? 'ציר' : 'נקודה';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px Rubik, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${item.num}. ${item.name} (${typeLabel})`, 740, y + 25);
+
+      ctx.fillStyle = item.inside ? '#34d399' : '#94a3b8';
+      ctx.font = '13px Rubik, sans-serif';
+      ctx.fillText(item.inside ? 'פגיעה מדויקת בתוך המתחם!' : `סטייה ממרכז היעד: ${item.dist} מטרים`, 740, y + 43);
+
+      ctx.fillStyle = item.score > 70 ? '#34d399' : item.score > 0 ? '#facc15' : '#f87171';
+      ctx.font = 'bold 18px Rubik, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${item.score} נק'`, 45, y + 33);
+
+      y += 62;
+    });
+
+    // כותרת תחתונה
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px Rubik, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`הופק אוטומטית במערכת ביטחון מגדל עוז בתאריך ${res.timestamp}`, 400, 930);
+
+    return canvas;
+  }
+
+  // שיתוף עשיר לוואטסאפ (תמונה + טקסט)
+  window.shareResultsToWhatsAppRich = async () => {
+    const res = lastDebriefResult;
+    const canvas = renderDebriefToCanvas();
+
+    const waLines = res.details.map(item => {
+      const typeStr = item.type === 'poly' ? 'מתחם' : item.type === 'line' ? 'ציר' : 'נקודה';
+      const devStr = item.inside ? 'בתוך המתחם (0 מ\')' : `${item.dist} מטר`;
+      return `📍 *${item.num}. ${item.name}* (${typeStr}): ${devStr} | *ציון: ${item.score}*`;
+    });
+
+    const reportText = `🛡️ *דו"ח תחקיר - ${res.title}*\n` +
+                       `👤 מאבטח: *${res.guardName}*\n` +
+                       `🎯 ציון סופי: *${res.finalScore} / 100*\n` +
+                       `🕒 שעת ביצוע: ${res.timestamp}\n\n` +
+                       `*פירוט סטיות לפי יעדים:*\n` +
+                       waLines.join('\n') + `\n\n_מצורפת תמונת תחקיר מבצעית._`;
+
+    // בדיקה האם המכשיר תומך בשיתוף קובץ תמונה ישירות
+    if (navigator.canShare) {
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], `תחקיר_${res.guardName}.png`, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'תחקיר בוחן גזרה',
+              text: reportText
+            });
+            return;
+          } catch (e) {}
+        }
+        sendWaDirectText(reportText);
+      });
+    } else {
+      sendWaDirectText(reportText);
+    }
+  };
+
+  function sendWaDirectText(text) {
+    const cleanPhone = (activeQuizMeta.phone || '').replace(/[^0-9]/g, '').replace(/^0/, '972');
+    const url = cleanPhone
+      ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  }
+
+  window.downloadDebriefImage = () => {
+    const canvas = renderDebriefToCanvas();
+    const link = document.createElement('a');
+    link.download = `תחקיר_גזרה_${lastDebriefResult.guardName}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
 
   window.onload = initApp;
 </script>
