@@ -33,13 +33,13 @@
 
     /* סיכות טקטיות */
     .tactical-marker-wrap {
-      position: relative; width: 34px; height: 34px;
+      position: relative; width: 32px; height: 32px;
       display: flex; align-items: center; justify-content: center;
     }
     .tactical-pin {
-      width: 30px; height: 30px; border-radius: 999px;
+      width: 28px; height: 28px; border-radius: 999px;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 13px; color: #fff;
+      font-weight: 800; font-size: 12px; color: #fff;
       border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.8);
       transition: transform 0.15s ease;
     }
@@ -50,8 +50,8 @@
     }
     .tactical-label {
       position: absolute; left: 50%; transform: translateX(-50%);
-      padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;
-      white-space: nowrap; direction: rtl; box-shadow: 0 2px 10px rgba(0,0,0,0.7);
+      padding: 1.5px 6px; border-radius: 5px; font-size: 11px; font-weight: 700;
+      white-space: nowrap; direction: rtl; box-shadow: 0 2px 8px rgba(0,0,0,0.7);
       pointer-events: none; border: 1px solid rgba(255,255,255,0.25);
     }
 
@@ -60,20 +60,6 @@
     .pin-active { background: #10b981; transform: scale(1.15); border-color: #fef08a; }
     .pin-truth { background: #16a34a; }
     .pin-error { background: #ef4444; }
-
-    /* תווית מרכזית לפוליגונים וצירים בתחקיר */
-    .tactical-tooltip-center {
-      background: rgba(15, 23, 42, 0.95) !important;
-      border: 1px solid rgba(16, 185, 129, 0.6) !important;
-      border-radius: 6px !important;
-      padding: 3px 8px !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.8) !important;
-      color: #6ee7b7 !important;
-      font-weight: 800 !important;
-      font-size: 11px !important;
-      direction: rtl !important;
-    }
-    .tactical-tooltip-center::before { display: none !important; }
 
     /* ידיות קודקודים לעריכת פוליגון וציר */
     .vertex-handle {
@@ -92,7 +78,7 @@
 <body class="flex flex-col h-full w-full relative overflow-hidden">
 
   <!-- סרגל עליון טקטי -->
-  <header class="bg-slate-900/95 border-b border-slate-800 px-3.5 py-2.5 flex items-center justify-between z-30 shadow-lg shrink-0">
+  <header class="bg-slate-900/95 border-b border-slate-800 px-3.5 py-2 flex items-center justify-between z-30 shadow-lg shrink-0">
     <div class="flex items-center gap-2">
       <div class="w-8 h-8 rounded-lg overflow-hidden border border-blue-500/40 flex items-center justify-center bg-slate-950 shrink-0">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="w-full h-full p-0.5">
@@ -441,39 +427,38 @@
     return { dist, nearest: { lat: target.lat, lng: target.lng }, inside: false };
   }
 
-  // אייקון טקטי רגיל (מצב מנהל ובחינה)
+  // אייקון טקטי רגיל
   function makeMarkerIcon(num, name, styleClass, showBadge = true) {
     const isVisible = showLabels && showBadge;
     return L.divIcon({
       className: '',
       html: `
         <div class="tactical-marker-wrap">
-          ${isVisible ? `<div class="tactical-label" style="bottom: 38px; background: rgba(15, 23, 42, 0.95); color: #f8fafc;">${num}. ${name}</div>` : ''}
+          ${isVisible ? `<div class="tactical-label" style="bottom: 34px; background: rgba(15, 23, 42, 0.95); color: #f8fafc;">${name}</div>` : ''}
           <div class="tactical-pin ${styleClass}">${num}</div>
         </div>
       `,
-      iconSize: [34, 34],
-      iconAnchor: [17, 17]
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
     });
   }
 
-  // אייקון תחקיר ייעודי עם הפרדה עליונה/תחתונה למניעת דריסה
-  function makeDebriefIcon(num, fullText, styleClass, labelPosition = 'top') {
-    const isTop = labelPosition === 'top';
+  // אייקון תחקיר מצומצם: טקסט קצרצר בלבד ללא מילים מיותרות
+  function makeDebriefIcon(num, shortText, styleClass, isTop = true) {
     const labelStyle = isTop 
-      ? 'bottom: 38px; border-color: rgba(16, 185, 129, 0.5); background: rgba(6, 78, 59, 0.95); color: #a7f3d0; z-index: 100;' 
-      : 'top: 38px; border-color: rgba(245, 158, 11, 0.5); background: rgba(15, 23, 42, 0.95); color: #fef08a; z-index: 90;';
+      ? 'bottom: 34px; border-color: rgba(16, 185, 129, 0.4); background: rgba(6, 78, 59, 0.95); color: #a7f3d0; z-index: 100;' 
+      : 'top: 34px; border-color: rgba(245, 158, 11, 0.4); background: rgba(15, 23, 42, 0.95); color: #fef08a; z-index: 90;';
     
     return L.divIcon({
       className: '',
       html: `
         <div class="tactical-marker-wrap">
-          <div class="tactical-label" style="${labelStyle}">${fullText}</div>
+          <div class="tactical-label" style="${labelStyle}">${shortText}</div>
           <div class="tactical-pin ${styleClass}">${num}</div>
         </div>
       `,
-      iconSize: [34, 34],
-      iconAnchor: [17, 17]
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
     });
   }
 
@@ -1056,7 +1041,7 @@
     showSubmittedScreen(lastDebriefResult);
   };
 
-  // מסך תחקיר מלא: הצגת שמות אמת ושמות סימונים עם הפרדה כיוונית
+  // מסך תחקיר: תוויות מקוצרות ומינימליסטיות ללא כפילות
   function showSubmittedScreen(resultData) {
     document.getElementById('guard-hud').classList.add('hidden');
     document.getElementById('bottom-bar').classList.add('hidden');
@@ -1070,65 +1055,40 @@
         ? computeCentroid(item.coords)
         : { lat: item.truthLat, lng: item.truthLng };
 
-      // 1. שכבות אמת (פוליגון / ציר / נקודה)
+      // 1. שרטוט הצורה של יעד האמת (פוליגון או קו) ללא תווית כפולה
       if (item.type === 'poly' && item.coords && item.coords.length >= 3) {
-        const poly = L.polygon(item.coords, {
+        debriefLayers.push(L.polygon(item.coords, {
           color: '#10b981',
-          weight: 3,
+          weight: 2.5,
           fillColor: '#10b981',
-          fillOpacity: 0.25
-        }).addTo(map);
-
-        poly.bindTooltip(`${item.num}. מתחם: ${item.name}`, {
-          permanent: true,
-          direction: 'center',
-          className: 'tactical-tooltip-center'
-        });
-        debriefLayers.push(poly);
-
-        debriefLayers.push(L.marker([centerTruth.lat, centerTruth.lng], {
-          icon: makeDebriefIcon(item.num, `${item.name} (מתחם אמת)`, 'pin-truth', 'top')
+          fillOpacity: 0.2
         }).addTo(map));
-
       } else if (item.type === 'line' && item.coords && item.coords.length >= 2) {
-        const line = L.polyline(item.coords, {
+        debriefLayers.push(L.polyline(item.coords, {
           color: '#10b981',
-          weight: 4
-        }).addTo(map);
-
-        line.bindTooltip(`${item.num}. ציר: ${item.name}`, {
-          permanent: true,
-          direction: 'center',
-          className: 'tactical-tooltip-center'
-        });
-        debriefLayers.push(line);
-
-        debriefLayers.push(L.marker([centerTruth.lat, centerTruth.lng], {
-          icon: makeDebriefIcon(item.num, `${item.name} (ציר אמת)`, 'pin-truth', 'top')
-        }).addTo(map));
-
-      } else {
-        debriefLayers.push(L.marker([item.truthLat, item.truthLng], {
-          icon: makeDebriefIcon(item.num, `${item.name} (אמת)`, 'pin-truth', 'top')
+          weight: 3.5
         }).addTo(map));
       }
 
-      // 2. סיכת מאבטח (מוצבת עם תווית תחתונה למניעת דריסה)
-      const guardPinClass = item.score > 70 ? 'pin-guard' : 'pin-error';
-      const guardLabelText = item.inside
-        ? `סימון ${item.name}: בתוך המתחם (0 מ')`
-        : `סימון ${item.name}: סטייה ${item.dist} מ'`;
-
-      debriefLayers.push(L.marker([item.ansLat, item.ansLng], {
-        icon: makeDebriefIcon(item.num, guardLabelText, guardPinClass, 'bottom')
+      // 2. סיכת יעד (ירוקה, למעלה) - מציגה את שם היעד בלבד
+      debriefLayers.push(L.marker([centerTruth.lat, centerTruth.lng], {
+        icon: makeDebriefIcon(item.num, item.name, 'pin-truth', true)
       }).addTo(map));
 
-      // 3. קו סטייה מקווקו
+      // 3. סיכת מאבטח (צהובה/אדומה, למטה) - מציגה את המרחק בלבד
+      const guardPinClass = item.score > 70 ? 'pin-guard' : 'pin-error';
+      const guardText = item.inside ? 'במתחם (0 מ\')' : `${item.dist} מ'`;
+
+      debriefLayers.push(L.marker([item.ansLat, item.ansLng], {
+        icon: makeDebriefIcon(item.num, guardText, guardPinClass, false)
+      }).addTo(map));
+
+      // 4. קו סטייה מקווקו
       if (item.dist > 0) {
         debriefLayers.push(L.polyline([[item.nearestLat, item.nearestLng], [item.ansLat, item.ansLng]], {
           color: item.score > 70 ? '#4ade80' : item.score > 0 ? '#facc15' : '#ef4444',
           dashArray: '5, 7',
-          weight: 2.5
+          weight: 2
         }).addTo(map));
       }
     });
@@ -1142,7 +1102,7 @@
   function populateResultsModal(res) {
     document.getElementById('res-guard-name-title').textContent = res.guardName;
     document.getElementById('final-score-circle').textContent = res.finalScore;
-    document.getElementById('res-summary-stats').textContent = `${res.details.length} יעדים • טווח דיוק: עד ${res.maxDist || 200} מ' • ${res.timestamp}`;
+    document.getElementById('res-summary-stats').textContent = `${res.details.length} יעדים • דיוק: עד ${res.maxDist || 200} מ' • ${res.timestamp}`;
 
     const listEl = document.getElementById('results-list');
     listEl.innerHTML = '';
@@ -1155,7 +1115,7 @@
         <div>
           <div class="font-bold text-white text-xs">${item.num}. ${item.name} <span class="text-[10px] text-slate-400">(${typeStr})</span></div>
           <div class="text-[11px] text-slate-400">
-            ${item.inside ? '🎯 <b class="text-emerald-400">פגיעה מדויקת בתוך המתחם!</b>' : `סטייה: ${item.dist} מטר`}
+            ${item.inside ? '🎯 <b class="text-emerald-400">פגיעה מדויקת במתחם!</b>' : `סטייה: ${item.dist} מטר`}
           </div>
         </div>
         <div class="font-black text-sm ${item.score > 70 ? 'text-emerald-400' : item.score > 0 ? 'text-amber-400' : 'text-red-500'}">
@@ -1167,9 +1127,9 @@
 
     document.getElementById('print-meta').innerHTML = `
       <div><b>מאבטח:</b> ${res.guardName}</div>
-      <div><b>טווח דיוק מוגדר:</b> עד ${res.maxDist || 200} מטר</div>
+      <div><b>טווח דיוק:</b> עד ${res.maxDist || 200} מטר</div>
       <div><b>תאריך:</b> ${res.timestamp}</div>
-      <div><b>ציון סופי:</b> ${res.finalScore}/100</div>
+      <div><b>ציון:</b> ${res.finalScore}/100</div>
     `;
     const printTbody = document.getElementById('print-table-body');
     printTbody.innerHTML = '';
@@ -1179,7 +1139,7 @@
           <td class="p-2">${it.num}</td>
           <td class="p-2 font-bold">${it.name}</td>
           <td class="p-2">${it.type === 'poly' ? 'מתחם' : it.type === 'line' ? 'ציר' : 'נקודה'}</td>
-          <td class="p-2">${it.inside ? 'בתוך המתחם (0 מ\')' : it.dist + ' מטר'}</td>
+          <td class="p-2">${it.inside ? 'במתחם (0 מ\')' : it.dist + ' מ\''}</td>
           <td class="p-2 font-bold">${it.score}</td>
         </tr>
       `;
@@ -1217,7 +1177,7 @@
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '15px Rubik, sans-serif';
-    ctx.fillText(`ביטחון מגדל עוז • מאבטח: ${res.guardName} • טווח דיוק: עד ${res.maxDist || 200} מ'`, 750, 95);
+    ctx.fillText(`ביטחון מגדל עוז • מאבטח: ${res.guardName} • טווח: עד ${res.maxDist || 200} מ'`, 750, 95);
 
     ctx.fillStyle = '#10b981';
     ctx.font = 'bold 44px monospace';
@@ -1248,7 +1208,7 @@
 
       ctx.fillStyle = item.inside ? '#34d399' : '#94a3b8';
       ctx.font = '13px Rubik, sans-serif';
-      ctx.fillText(item.inside ? 'פגיעה מדויקת בתוך המתחם!' : `סטייה ממרכז היעד: ${item.dist} מטרים`, 740, y + 43);
+      ctx.fillText(item.inside ? 'פגיעה מדויקת במתחם!' : `סטייה: ${item.dist} מטר`, 740, y + 43);
 
       ctx.fillStyle = item.score > 70 ? '#34d399' : item.score > 0 ? '#facc15' : '#f87171';
       ctx.font = 'bold 18px Rubik, sans-serif';
@@ -1261,7 +1221,7 @@
     ctx.fillStyle = '#64748b';
     ctx.font = '12px Rubik, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`הופק במערכת ביטחון מגדל עוז בתאריך ${res.timestamp}`, 400, 930);
+    ctx.fillText(`ביטחון מגדל עוז • ${res.timestamp}`, 400, 930);
 
     return canvas;
   }
@@ -1272,17 +1232,16 @@
 
     const waLines = res.details.map(item => {
       const typeStr = item.type === 'poly' ? 'מתחם' : item.type === 'line' ? 'ציר' : 'נקודה';
-      const devStr = item.inside ? 'בתוך המתחם (0 מ\')' : `${item.dist} מטר`;
-      return `📍 *${item.num}. ${item.name}* (${typeStr}): ${devStr} | *ציון: ${item.score}*`;
+      const devStr = item.inside ? 'במתחם (0 מ\')' : `${item.dist} מ'`;
+      return `📍 *${item.num}. ${item.name}* (${typeStr}): ${devStr} | *${item.score} נק'*`;
     });
 
     const reportText = `🛡️ *דו"ח תחקיר - ${res.title}*\n` +
                        `👤 מאבטח: *${res.guardName}*\n` +
-                       `🎯 ציון סופי: *${res.finalScore} / 100*\n` +
-                       `📏 טווח דיוק מקסימלי: עד ${res.maxDist || 200} מטר\n` +
-                       `🕒 שעת ביצוע: ${res.timestamp}\n\n` +
-                       `*פירוט סטיות לפי יעדים:*\n` +
-                       waLines.join('\n') + `\n\n_מצורפת תמונת תחקיר מבצעית._`;
+                       `🎯 ציון: *${res.finalScore} / 100*\n` +
+                       `📏 טווח: עד ${res.maxDist || 200} מטר\n` +
+                       `🕒 ביצוע: ${res.timestamp}\n\n` +
+                       waLines.join('\n');
 
     if (navigator.canShare) {
       canvas.toBlob(async (blob) => {
